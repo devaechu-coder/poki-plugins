@@ -1,0 +1,22 @@
+name: PokiLinks
+version: ${project.version}
+main: kr.devaechu.pokilinks.PokiLinks
+api-version: '1.21'
+author: DevAechu
+description: 포키 서버 바로가기 링크 (/위키, /런처, /링크)
+commands:
+  wiki:
+    description: 포키 위키 링크
+    aliases: [위키]
+  launcher:
+    description: 포키 런처 다운로드 링크
+    aliases: [런처]
+  links:
+    description: 바로가기 링크 전체 보기
+    aliases: [링크]
+  pokilinks:
+    description: 바로가기 설정 다시 불러오기
+    permission: pokilinks.admin
+permissions:
+  pokilinks.admin:
+    default: op

@@ -1,0 +1,18 @@
+# 포키 바로가기 링크
+# 색 코드: &a &e 같은 마크 색 코드 사용 가능
+# 바꾼 뒤 /pokilinks reload
+
+links:
+  wiki:
+    title: '&a&l포키 위키'
+    description: '&7도감, 체육관, 서버 규칙을 확인할 수 있어요'
+    url: 'https://poki.devaechu.com'
+  launcher:
+    title: '&b&l포키 런처'
+    description: '&7런처 다운로드 페이지예요'
+    url: 'https://poki-launcher.devaechu.com'
+
+# 클릭 버튼 문구
+button: '&e&n▶ 클릭해서 열기'
+# 버튼에 마우스를 올리면 보이는 문구 ({url} 링크 주소)
+hover: '{url}'
