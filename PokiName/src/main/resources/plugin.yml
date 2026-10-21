@@ -3,6 +3,7 @@ version: ${project.version}
 main: kr.devaechu.pokiname.PokiName
 api-version: '1.21'
 author: DevAechu
+softdepend: [Vault, PlaceholderAPI, Essentials]
 description: 포키 서버 한글닉 이름표 / Tab 목록 / 환영 문구 (패킷 미사용)
 commands:
   pnick:

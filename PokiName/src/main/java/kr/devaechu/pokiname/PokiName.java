@@ -59,6 +59,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private final Map<UUID, String> lastWorld = new HashMap<>();
     private final Map<UUID, Integer> stableTicks = new HashMap<>();
     private int tickCount = 0;
+    /** 소지금 순위 (Vault) */
+    private MoneyRank moneyRank;
 
     @Override
     public void onEnable() {
@@ -76,12 +78,20 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         for (Player p : Bukkit.getOnlinePlayers()) apply(p);
         refreshHeaders();
         tagTask = Bukkit.getScheduler().runTaskTimer(this, this::tickTags, 1L, 1L);
+
+        moneyRank = new MoneyRank(this);
+        moneyRank.start();
+        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            new PokiExpansion(this).register();
+            getLogger().info("PlaceholderAPI 연결: %pokiname_nick%, %pokiname_money_1% 등 사용 가능");
+        }
         getLogger().info("한글닉 " + nicks.size() + "개 불러옴");
     }
 
     @Override
     public void onDisable() {
         if (tagTask != null) tagTask.cancel();
+        if (moneyRank != null) moneyRank.stop();
         for (UUID id : new ArrayList<>(tags.keySet())) removeTag(id);
     }
 
@@ -321,6 +331,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             case "리로드", "reload" -> {
                 reloadConfig();
                 loadNicks();
+                if (moneyRank != null) { moneyRank.start(); }
                 for (Player p : Bukkit.getOnlinePlayers()) apply(p);
                 refreshHeaders();
                 s.sendMessage(color("&a설정을 다시 불러왔어요."));
@@ -354,6 +365,24 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             }
         }
         return out;
+    }
+
+    // ---------- 다른 곳에서 쓰는 한글닉 조회 ----------
+
+    /** UUID 로 한글닉 찾기. 없으면 fallback(보통 마크닉) */
+    String nickOf(UUID id, String fallback) {
+        String[] v = nicks.get(id);
+        return v != null ? v[1] : fallback;
+    }
+
+    /** 마크닉으로 한글닉 찾기 (접속 안 해도 됨). 없으면 마크닉 그대로 */
+    String nickByName(String name) {
+        UUID id = findByName(name);
+        return id != null ? nicks.get(id)[1] : name;
+    }
+
+    MoneyRank moneyRank() {
+        return moneyRank;
     }
 
     // ---------- 저장 ----------
