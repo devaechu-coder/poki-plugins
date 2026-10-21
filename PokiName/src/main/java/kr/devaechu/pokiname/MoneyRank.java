@@ -29,6 +29,8 @@ final class MoneyRank {
     private Economy econ;
     private BukkitTask task;
     private volatile List<Entry> top = Collections.emptyList();
+    /** 마지막으로 명령어를 실행한 1등 (바뀔 때만 실행) */
+    private UUID lastFirst;
 
     MoneyRank(PokiName plugin) {
         this.plugin = plugin;
@@ -36,6 +38,7 @@ final class MoneyRank {
 
     void start() {
         stop();
+        lastFirst = null; // 리로드하면 한 번 다시 적용
         ConfigurationSection c = section();
         if (!c.getBoolean("enabled", true)) return;
         if (!hookVault()) {
@@ -88,6 +91,25 @@ final class MoneyRank {
         }
         all.sort((a, b) -> Double.compare(b.value(), a.value()));
         top = List.copyOf(all.subList(0, Math.min(size, all.size())));
+        onFirstChanged();
+    }
+
+    /** 1등이 바뀌면 config 의 명령어 실행 (예: 1등 NPC 스킨 바꾸기) */
+    private void onFirstChanged() {
+        Entry first = get(1);
+        if (first == null || first.id().equals(lastFirst)) return;
+        lastFirst = first.id();
+        for (String cmd : section().getStringList("on-first-change")) {
+            String c = cmd.replace("{name}", first.name())
+                    .replace("{nick}", plugin.nickOf(first.id(), first.name()))
+                    .replace("{value}", formatValue(first.value()));
+            if (c.startsWith("/")) c = c.substring(1);
+            try {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c);
+            } catch (RuntimeException ex) {
+                plugin.getLogger().warning("1등 변경 명령어 실패 (" + c + "): " + ex.getMessage());
+            }
+        }
     }
 
     /** 1부터 시작하는 순위. 없으면 null */

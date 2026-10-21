@@ -58,3 +58,7 @@ money-rank:
   line: '&f{rank}등 : &e{nick} &f/ &a{value}'
   # 그 등수에 사람이 없을 때
   empty-line: '&7{rank}등 : -'
+  # 1등이 바뀔 때 콘솔에서 실행할 명령어 ({name} 마크닉, {nick} 한글닉, {value} 금액)
+  # 서버 켤 때·리로드할 때도 한 번 실행됨
+  on-first-change:
+    - 'npc skin --id 7 {name}'

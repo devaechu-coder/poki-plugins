@@ -52,6 +52,7 @@ PlaceholderAPI 가 있으면 자동 연결. 홀로그램(DecentHolograms)·스�
 
 Vault(Essentials 돈)로 `interval-seconds`(기본 10초)마다 직접 계산. Essentials `baltop` 은 누가 `/baltop` 을 쳐야 갱신돼서 대신 만듦.
 돈 1 미만은 빼고, 금액은 `$7,199` 처럼 쉼표·소수점 버림. 설정은 config.yml 의 `money-rank`.
+1등이 바뀌면 `on-first-change` 명령어를 콘솔로 실행 (기본: Citizens 7번 NPC 스킨을 1등 스킨으로).
 
 ## 파일
 
@@ -64,6 +65,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
+- 1.2.1 — 1등이 바뀌면 명령어 실행 (`on-first-change`, 1등 NPC 스킨 자동 변경)
 - 1.2.0 — PlaceholderAPI 연결(한글닉 조회), 소지금 순위 실시간 계산
 - 1.1.2 — 벽 너머 보이기 기본 끔, 높이 0.6
 - 1.1.1 — 이름표 잔상 수정
