@@ -1,0 +1,41 @@
+# 포키 서버 이름표 설정
+# 색 코드: &a &e 같은 마크 색 코드, &#FF7F7F 같은 헥스 색 사용 가능
+# 바꾼 뒤 /한글닉 리로드
+
+# 머리 위 이름표
+nametag:
+  # display: 원래 마크닉을 숨기고 한글닉만 보여줌
+  # prefix : "한글닉 마크닉" 형태 (원래 이름표에 접두사만 붙임)
+  mode: display
+
+  # [display 모드] 머리 위에 보일 글씨 ({nick} 한글닉, {name} 마크닉)
+  display-text: '&f{nick}'
+  # [display 모드] 글씨 높이 (머리 위로 얼마나 띄울지)
+  height-offset: 0.6
+  # [display 모드] 접속·차원 이동 후 이름표를 띄우기까지 기다리는 시간 (20 = 1초)
+  spawn-delay-ticks: 20
+  # [display 모드] 벽 너머로도 보이게 할지 (true 면 셰이더+비 올 때 글씨가 가려질 수 있음)
+  see-through: false
+
+  # [prefix 모드] 설정
+  prefix: '&f{nick} &7'
+  suffix: ''
+  # 원래 마크닉 색 (GRAY, WHITE, YELLOW, GREEN, AQUA, RED 등)
+  name-color: GRAY
+
+# Tab 목록에 보이는 이름 ({nick} 한글닉, {name} 마크닉)
+tab-name: '&f{nick}'
+
+# 채팅 등에 쓰이는 이름
+display-name: '{nick}'
+
+# Tab 목록 위 문구 ({player} 한글닉(없으면 마크닉), {name} 마크닉, {online} 접속자 수, {max} 최대 인원)
+header:
+  - ''
+  - '&c&l[ 포키 서버 ]'
+  - '&f환영합니다 &a&l{player}&f 님'
+  - '&f현재 접속자 &e{online}&f 명'
+  - ''
+
+# Tab 목록 아래 문구 (비워두면 안 나옴)
+footer: []

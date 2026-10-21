@@ -1,0 +1,16 @@
+name: PokiName
+version: ${project.version}
+main: kr.devaechu.pokiname.PokiName
+api-version: '1.21'
+author: DevAechu
+description: 포키 서버 한글닉 이름표 / Tab 목록 / 환영 문구 (패킷 미사용)
+commands:
+  pnick:
+    description: 한글닉 관리
+    usage: /pnick <설정|해제|목록|리로드>
+    aliases: [한글닉]
+    permission: pokiname.admin
+permissions:
+  pokiname.admin:
+    description: 한글닉 설정 권한
+    default: op
