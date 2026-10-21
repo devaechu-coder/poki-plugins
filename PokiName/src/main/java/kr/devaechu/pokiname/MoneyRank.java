@@ -39,6 +39,7 @@ final class MoneyRank {
     void start() {
         stop();
         lastFirst = null; // 리로드하면 한 번 다시 적용
+        top = Collections.emptyList();
         ConfigurationSection c = section();
         if (!c.getBoolean("enabled", true)) return;
         if (!hookVault()) {
@@ -46,6 +47,8 @@ final class MoneyRank {
             return;
         }
         long every = Math.max(2, c.getLong("interval-seconds", 10)) * 20L;
+        plugin.getLogger().info("소지금 순위 켜짐 — " + (every / 20) + "초마다, 제외: " + c.getStringList("exclude")
+                + ", 1등 변경 명령어 " + c.getStringList("on-first-change").size() + "개");
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::refresh, 40L, every);
     }
 
@@ -78,7 +81,10 @@ final class MoneyRank {
         List<Entry> all = new ArrayList<>();
         for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
             String name = op.getName();
-            if (name == null || exclude.contains(name.toLowerCase(Locale.ROOT))) continue;
+            if (name == null) continue;
+            // 마크닉·한글닉 둘 다로 뺄 수 있음
+            if (exclude.contains(name.toLowerCase(Locale.ROOT))
+                    || exclude.contains(plugin.nickOf(op.getUniqueId(), name).toLowerCase(Locale.ROOT))) continue;
             double bal;
             try {
                 if (!econ.hasAccount(op)) continue;
