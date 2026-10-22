@@ -9,9 +9,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,6 +52,8 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     private final Set<Long> paying = ConcurrentHashMap.newKeySet();
     /** 이번 실행 중 처리 끝난 장부 번호 (DB 반영 전에 같은 줄을 또 집어도 다시 안 주게) */
     private final Set<Long> settled = ConcurrentHashMap.newKeySet();
+    /** 즉사 후 부활하면 돌려줄 필수 아이템 */
+    private final Map<UUID, List<ItemStack>> restore = new ConcurrentHashMap<>();
 
     @Override
     public void onEnable() {
@@ -145,6 +154,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     public void onJoin(PlayerJoinEvent e) {
         UUID u = e.getPlayer().getUniqueId();
         online.add(u);
+        if (restore.containsKey(u) && !e.getPlayer().isDead()) giveBack(e.getPlayer());
         // 지급 직전에 나갔던 후원이 있으면 지금 지급
         if (links.get(u) != null) {
             db.pendingFor(u).thenAccept(list -> {
@@ -155,6 +165,12 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) { online.remove(e.getPlayer().getUniqueId()); }
+
+    @EventHandler
+    public void onRespawn(PlayerRespawnEvent e) {
+        Player p = e.getPlayer();
+        if (restore.containsKey(p.getUniqueId())) Bukkit.getScheduler().runTaskLater(this, () -> giveBack(p), 2L);
+    }
 
     // ── 후원 수신 (세션 스레드) ──────────────────────────
 
@@ -237,20 +253,32 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
             if (p == null) return "스트리머가 접속 중이 아니에요 — 접속하면 자동 지급";
             boolean staff = p.hasPermission("poki.donate.staff");
             Rewards r = rewards;
-            Rewards.Tier tier = Rewards.pick(staff ? r.staff : r.resident, d.amount());
+            Rewards.Tier tier = r.pick(staff ? r.staff : r.resident, d.amount());
             String profile = staff ? "운영진" : "입주민";
             if (tier == null) {
-                String why = (staff ? r.staff : r.resident).isEmpty() ? profile + " 보상표 비어 있음" : "최소 금액 미만";
+                String why = (staff ? r.staff : r.resident).isEmpty() ? profile + " 보상표 비어 있음"
+                        : r.exact ? "메뉴에 없는 금액" : "최소 금액 미만";
                 db.setStatus(d.id(), Donation.Status.SKIPPED, why);
                 settled.add(d.id());
                 return "대상 아님 (" + why + ")";
+            }
+            if (tier.commands().isEmpty()) {
+                db.setStatus(d.id(), Donation.Status.FAILED, won(tier.min()) + " 메뉴 보상 명령어 미설정 — 직접 지급 필요");
+                settled.add(d.id());
+                tellAdmins("&e후원 #" + d.id() + " &f" + plain(p.getName()) + " " + won(d.amount()) + " &7— 보상 명령어가 아직 없어요. 직접 지급해 주세요.");
+                return "실패 — " + won(tier.min()) + " 메뉴 보상 명령어가 rewards.yml 에 없어요";
             }
             int count = tier.count(d.amount());
             for (String raw : tier.commands()) {
                 String cmd = fill(raw, p.getName(), count, d);
                 boolean ok;
                 try {
-                    ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.startsWith("/") ? cmd.substring(1) : cmd);
+                    if (cmd.equalsIgnoreCase("@wipe-and-kill")) {
+                        wipeAndKill(p, r);
+                        ok = true;
+                    } else {
+                        ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.startsWith("/") ? cmd.substring(1) : cmd);
+                    }
                 } catch (RuntimeException ex) {
                     getLogger().log(Level.WARNING, "후원 #" + d.id() + " 보상 명령어 오류: " + cmd, ex);
                     ok = false;
@@ -263,7 +291,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
                     return "실패 — 명령어를 실행하지 못했어요";
                 }
             }
-            db.setStatus(d.id(), Donation.Status.PAID, profile + " " + won(tier.min()) + "구간 · " + count + "개");
+            db.setStatus(d.id(), Donation.Status.PAID, profile + " " + won(tier.min()) + " 메뉴" + (tier.per() > 0 ? " · " + count + "개" : ""));
             settled.add(d.id());
             getLogger().info("후원 #" + d.id() + " 보상 지급: " + p.getName() + " " + profile + " " + count + "개");
             if (!tier.message().isBlank()) p.sendMessage(color(PREFIX + fill(tier.message(), plain(p.getName()), count, d)));
@@ -271,6 +299,37 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
         } finally {
             paying.remove(d.id());
         }
+    }
+
+    /**
+     * 즉사: rewards.yml 의 keep-items 에 있는 필수 아이템만 빼두고 인벤토리(갑옷·왼손 포함) 전부 삭제 → 사망.
+     * 빼둔 아이템은 부활하면 돌려준다 (keepInventory 설정과 상관없이 땅에 떨어지지 않음).
+     */
+    private void wipeAndKill(Player p, Rewards r) {
+        PlayerInventory inv = p.getInventory();
+        List<ItemStack> kept = new ArrayList<>();
+        for (ItemStack it : inv.getContents()) {
+            if (it == null || it.getType().isAir()) continue;
+            ItemMeta meta = it.getItemMeta();
+            Integer cmd = meta != null && meta.hasCustomModelData() ? meta.getCustomModelData() : null;
+            if (r.keeps(it.getType().getKey().toString(), cmd)) kept.add(it.clone());
+        }
+        inv.clear();
+        inv.setArmorContents(new ItemStack[4]);
+        inv.setItemInOffHand(null);
+        p.setItemOnCursor(null);
+        if (!kept.isEmpty()) restore.merge(p.getUniqueId(), kept, (a, b) -> { List<ItemStack> m = new ArrayList<>(a); m.addAll(b); return m; });
+        getLogger().info("즉사: " + p.getName() + " 인벤토리 삭제 (필수 아이템 " + kept.size() + "칸 보관)");
+        p.setHealth(0);
+    }
+
+    private void giveBack(Player p) {
+        List<ItemStack> items = restore.remove(p.getUniqueId());
+        if (items == null || items.isEmpty()) return;
+        for (ItemStack left : p.getInventory().addItem(items.toArray(new ItemStack[0])).values()) {
+            p.getWorld().dropItemNaturally(p.getLocation(), left);
+        }
+        p.sendMessage(color(PREFIX + "&7필수 아이템 " + items.size() + "칸을 돌려받았어요."));
     }
 
     private static String fill(String s, String player, int count, Donation d) {

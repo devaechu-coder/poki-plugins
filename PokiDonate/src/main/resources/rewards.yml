@@ -1,30 +1,89 @@
-# 포키 후원 보상표
-# 바꾼 뒤 /후원 리로드
+# 포키 후원 메뉴판 (보상표)
+# 바꾼 뒤 /후원 리로드  ← jar 교체·재시작 필요 없음
 #
-# 구간: 후원 금액이 min 이상인 구간 중 가장 높은 구간 하나만 실행한다.
-#   per       : 이 금액당 1개씩 (예: 1000 → 5000원이면 5개). 빼면 금액 상관없이 1개
-#   max-count : 한 번 후원에 최대 개수 (마크 한 칸 최대 64)
-#   message   : 받은 스트리머에게 보낼 채팅 (빈칸이면 안 보냄)
-#   commands  : 콘솔로 실행할 명령어. 따옴표가 섞인 긴 명령어는 "- |-" 블록으로 적는다
+# match
+#   exact    : 메뉴 금액과 "딱 맞을 때만" 지급 (4,000원 같은 메뉴에 없는 금액은 지급 안 함)
+#   at-least : 그 금액 "이상" 중 가장 높은 칸 하나 지급
+match: exact
+
+# 칸 하나
+#   amount   : 메뉴 금액
+#   name     : /후원 보상표 에 보이는 이름
+#   message  : 받은 스트리머에게 보낼 채팅 (빈칸이면 안 보냄)
+#   commands : 콘솔로 실행할 명령어 (위에서부터 차례로)
+#              비워두면([]) 그 메뉴 후원은 '실패 · 보상 명령어 미설정' 으로 남고 관리자에게 알림 → 직접 지급
+#   per / max-count : (at-least 일 때만 쓸모) 이 금액당 1개, 최대 개수 → %count%
 #
 # 명령어·메시지에 쓸 수 있는 값
-#   %player%  연동된 스트리머의 마크 닉네임
-#   %count%   개수
-#   %amount%  후원 금액 (숫자만, 예: 5000)
+#   %player%  후원 받은 스트리머의 마크 닉네임
+#   %count%   개수 (per 를 안 쓰면 1)
+#   %amount%  후원 금액 (숫자만)
 #   %donator% 후원자 치지직 닉네임
 #
+# 특수 명령어
+#   @wipe-and-kill : 아래 keep-items 만 남기고 인벤토리(갑옷·왼손 포함) 전부 삭제 → 즉사.
+#                    남긴 아이템은 부활하면 돌려줌 (땅에 안 떨어짐)
+#
 # ⚠ give 는 꼭 minecraft:give 로. 그냥 give 는 Essentials 가 가로채서 아이템 컴포넌트 문법이 깨진다.
-# ⚠ custom_model_data 1001 = 포키 롤리팝 전용
+# ⚠ custom_model_data 1001 = 포키 롤리팝 전용 (아이템 정의는 데이터팩 함수 poki:give_lollipop 안에 있음)
 
-# 입주민 (poki.donate.streamer)
+# 즉사 때 지우지 않을 필수 아이템
+#   아이템 id (예: cobblemon:pokedex_red, minecraft:compass), * 사용 가능 (예: cobblemon:pokedex_*)
+#   cmd:번호 = custom_model_data 로 찾기 (예: cmd:1001)
+#   비어 있으면 전부 삭제
+keep-items: []
+
+# 입주민 (poki.donate.streamer) — 임시 메뉴판
 resident:
-  - min: 1000
-    per: 1000
-    max-count: 64
-    message: '&d포키 롤리팝 &f%count%개 도착! &7(%donator%님 %amount%원 후원)'
+  - amount: 1000
+    name: '포키 롤리팝'
+    message: '&d포키 롤리팝 &f도착! &7(%donator%님 %amount%원 후원)'
     commands:
-      - |-
-        minecraft:give %player% minecraft:bread[custom_name='{"text":"포키 롤리팝","color":"#FF6FA8","bold":true,"italic":false}',lore=['{"text":"핑크·하늘·보라 세 가지 맛이 빙글빙글","color":"#9FD8FF","italic":false}','{"text":"♥ 후원 감사 선물 ♥","color":"#C58CFF","italic":false}'],custom_model_data=1001,enchantment_glint_override=true,food={nutrition:10,saturation:12.0f,can_always_eat:true,eat_seconds:0.8f,effects:[{effect:{id:"minecraft:regeneration",duration:160,amplifier:1},probability:1.0f},{effect:{id:"minecraft:absorption",duration:2400,amplifier:0},probability:1.0f},{effect:{id:"minecraft:speed",duration:1200,amplifier:0},probability:1.0f}]}] %count%
+      - 'minecraft:function poki:give_lollipop {player:"%player%",count:1}'
 
-# 운영진 (poki.donate.staff) — 서버 전체 이벤트. 아직 안 정함 → 비어 있으면 운영진 후원은 '대상 아님'으로 기록
+  - amount: 3000
+    name: '일반볼 10개 랜덤권'
+    message: '&b일반볼 10개 랜덤권 &f도착! &7(%donator%님)'
+    commands: []   # TODO 랜덤권 지급 명령어
+
+  - amount: 5000
+    name: '포켓몬 일반도구 랜덤뽑기권 2개'
+    message: '&e포켓몬 일반도구 랜덤뽑기권 2개 &f도착! &7(%donator%님)'
+    commands: []   # TODO
+
+  - amount: 10000
+    name: '기술머신 랜덤뽑기권 2개'
+    message: '&a기술머신 랜덤뽑기권 2개 &f도착! &7(%donator%님)'
+    commands: []   # TODO
+
+  - amount: 15000
+    name: '코블달러 10,000C'
+    message: '&6코블달러 10,000C &f도착! &7(%donator%님)'
+    commands:
+      - 'cobbledollars give %player% 10000'   # 서버에서 문법 한 번 확인
+
+  - amount: 30000
+    name: '전설도구 랜덤뽑기권 1개'
+    message: '&c전설도구 랜덤뽑기권 &f도착! &7(%donator%님)'
+    commands: []   # TODO
+
+  - amount: 50000
+    name: '마스터볼 1개'
+    message: '&5마스터볼 &f도착! &7(%donator%님)'
+    commands:
+      - 'minecraft:give %player% cobblemon:master_ball 1'
+
+  - amount: 100000
+    name: '랜덤 전설 포켓몬 뽑기'
+    message: '&6랜덤 전설 포켓몬 뽑기 &f도착! &7(%donator%님)'
+    commands: []   # TODO 방식 정하면 채우기
+
+  - amount: 200000
+    name: '즉사 (필수 아이템 제외 인벤 전부 제거)'
+    message: ''
+    commands:
+      - 'minecraft:tellraw @a {"text":"[포키] %donator%님의 20만원 후원으로 %player% 즉사!","color":"dark_purple","bold":true}'
+      - '@wipe-and-kill'
+
+# 운영진 (poki.donate.staff) — 서버 전체 이벤트. 아직 안 정함 → 비어 있으면 운영진 후원은 '대상 아님'
 staff: []

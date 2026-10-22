@@ -240,18 +240,19 @@ final class DonateCommand implements TabExecutor {
     private void rewards(CommandSender s) {
         Rewards r = plugin.rewards();
         if (r == null) { msg(s, "&7보상표가 아직 없어요."); return; }
-        msg(s, "&7── 후원 보상표 &8(방송 중 마크 접속해 있을 때만) &7──");
+        msg(s, "&7── 후원 메뉴판 &8(방송 중 마크 접속해 있을 때만" + (r.exact ? ", 딱 그 금액일 때" : "") + ") &7──");
         s.sendMessage(color("&b입주민"));
-        tiers(s, r.resident);
+        tiers(s, r.resident, r.exact);
         s.sendMessage(color("&d운영진"));
-        tiers(s, r.staff);
+        tiers(s, r.staff, r.exact);
     }
 
-    private static void tiers(CommandSender s, List<Rewards.Tier> list) {
+    private static void tiers(CommandSender s, List<Rewards.Tier> list, boolean exact) {
         if (list.isEmpty()) { s.sendMessage(color("&8  아직 없음")); return; }
         for (Rewards.Tier t : list) {
-            String how = t.per() > 0 ? won(t.per()) + "당 1개 (최대 " + t.maxCount() + "개)" : "1번";
-            s.sendMessage(color("&7  " + won(t.min()) + " 이상 &8· &f" + how));
+            String what = !t.name().isBlank() ? t.name()
+                    : t.per() > 0 ? won(t.per()) + "당 1개 (최대 " + t.maxCount() + "개)" : "보상";
+            s.sendMessage(color("&7  " + won(t.min()) + (exact ? "" : " 이상") + " &8· &f" + plain(what)));
         }
     }
 
