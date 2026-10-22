@@ -186,10 +186,12 @@ final class DonateCommand implements TabExecutor {
         try { amount = Long.parseLong(a[1].replace(",", "")); } catch (NumberFormatException e) { msg(s, "&c금액은 숫자로 적어주세요."); return; }
         String text = a.length > 2 ? String.join(" ", Arrays.copyOfRange(a, 2, a.length)) : "테스트 후원";
         String donor = s instanceof Player p ? p.getName() + " (테스트)" : "콘솔 (테스트)";
-        Donation d = plugin.donation(l.channelId(), l, "test", donor, amount, "CHAT", text, true);
-        plugin.record(d);
-        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요."
-                + (d.status() == Donation.Status.SKIPPED ? " &7(마크 미접속이라 '대상 아님')" : ""));
+        if (!plugin.isOnline(l.uuid())) {
+            msg(s, "&e" + plain(l.playerName()) + " 님이 마크에 없어서 기록하지 않았어요. &7(실제 후원도 접속 중일 때만 기록돼요)");
+            return;
+        }
+        plugin.record(plugin.donation(l.channelId(), l, "test", donor, amount, "CHAT", text, true));
+        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요.");
     }
 
     // ── 공통 ────────────────────────────────────────────

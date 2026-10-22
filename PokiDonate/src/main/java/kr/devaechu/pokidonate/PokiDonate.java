@@ -146,19 +146,24 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     public void onDonation(JsonObject d) {
         String channelId = ChzzkApi.str(d, "channelId");
         Link l = links.byChannel(channelId);
+        if (l != null && !online.contains(l.uuid())) {
+            // 방송 중이어도 마크에 없으면 보상 대상이 아니라 장부에 남기지 않는다
+            if (getConfig().getBoolean("debug")) getLogger().info("후원 무시 (마크 미접속): " + l.playerName() + " " + won(amount(d.get("payAmount"))));
+            return;
+        }
         record(donation(channelId, l, ChzzkApi.str(d, "donatorChannelId"), ChzzkApi.str(d, "donatorNickname"),
                 amount(d.get("payAmount")), ChzzkApi.str(d, "donationType"), ChzzkApi.str(d, "donationText"), false));
     }
 
-    /**
-     * 보상 대상인지 정해서 장부 한 줄을 만든다.
-     * 방송 중이라도 스트리머가 마크에 접속해 있지 않으면 보상 대상이 아니다 (기록은 '대상 아님'으로 남김).
-     */
+    boolean isOnline(UUID uuid) {
+        return online.contains(uuid);
+    }
+
+    /** 장부 한 줄 만들기. 마크 미접속 후원은 여기까지 오지 않는다 */
     Donation donation(String channelId, Link l, String donatorId, String donatorNick, long amount, String type, String text, boolean test) {
         Donation.Status st = Donation.Status.PENDING;
         String note = null;
         if (l == null) { st = Donation.Status.SKIPPED; note = "미연동 채널"; }
-        else if (!online.contains(l.uuid())) { st = Donation.Status.SKIPPED; note = "마크 미접속"; }
         return new Donation(0, System.currentTimeMillis(), channelId, l == null ? null : l.uuid(), l == null ? null : l.playerName(),
                 donatorId, donatorNick, amount, type, text, st, test, note);
     }
