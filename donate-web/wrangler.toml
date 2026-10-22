@@ -1,0 +1,22 @@
+# 포키 후원 연동 인증 페이지 — auth.poki.devaechu.com
+name = "poki-auth"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+# Custom Domain: 배포하면 DNS 와 인증서(2단계 서브도메인 포함)를 Cloudflare 가 알아서 만든다.
+# 대시보드에서 이 주소로 DNS 레코드를 미리 만들어두면 오히려 연결이 막힌다.
+routes = [
+  { pattern = "auth.poki.devaechu.com", custom_domain = true }
+]
+
+[vars]
+CHZZK_CLIENT_ID = "80eeb092-dad2-42ed-a499-3753937b2229"
+REDIRECT_URI = "https://auth.poki.devaechu.com/chzzk/callback"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "poki-auth"
+database_id = "481dd99f-2b9f-4368-a69a-de8678b73a70"
+
+# 비밀값 BRIDGE_SECRET 은 여기 적지 않는다 (GitHub Secrets → 배포 때 주입).

@@ -1,0 +1,28 @@
+name: PokiDonate
+version: ${project.version}
+main: kr.devaechu.pokidonate.PokiDonate
+api-version: '1.21'
+author: DevAechu
+description: 포키 치지직 후원 연동 (채널 연동 · 후원 장부)
+commands:
+  donate:
+    description: 치지직 후원 연동
+    usage: /후원
+    aliases: [후원]
+permissions:
+  poki.donate.use:
+    description: /후원 도움말 보기
+    default: true
+  poki.donate.streamer:
+    description: 입주민·운영진 — 채널 연동, 내 후원 기록
+    default: false
+  poki.donate.staff:
+    description: 운영진 — 입주민 권한 포함, 후원이 서버 전체 이벤트로 처리됨 (다음 단계)
+    default: false
+    children:
+      poki.donate.streamer: true
+  poki.donate.admin:
+    description: 관리자 — 전체 기록, 연동 현황, 강제해제, 테스트, 리로드
+    default: op
+    children:
+      poki.donate.streamer: true

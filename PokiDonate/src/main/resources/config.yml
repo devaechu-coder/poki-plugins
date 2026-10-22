@@ -1,0 +1,26 @@
+# 포키 치지직 후원 연동
+# 바꾼 뒤 /후원 리로드
+
+chzzk:
+  # 치지직 개발자센터 > 애플리케이션 (poki-donate)
+  client-id: '80eeb092-dad2-42ed-a499-3753937b2229'
+  # 같은 화면의 Client Secret 을 붙여넣기. 절대 다른 곳에 공유하지 말 것
+  client-secret: ''
+
+# 연동 인증 페이지 (donate-web, Cloudflare Worker)
+bridge:
+  url: 'https://auth.poki.devaechu.com'
+  # GitHub 레포 Secrets 의 POKI_BRIDGE_SECRET 과 똑같은 값
+  secret: ''
+
+# /후원 연동 링크 유효 시간 (분)
+link-expire-minutes: 10
+
+# /후원 기록 한 페이지 줄 수
+record-page-size: 10
+
+# 후원이 들어오면 연동된 스트리머(접속 중) 채팅에 알림
+notify-streamer: true
+
+# 치지직에서 오는 원본 이벤트를 콘솔에 찍기 (문제 생겼을 때만 켜기)
+debug: false

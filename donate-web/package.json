@@ -1,0 +1,13 @@
+{
+  "name": "poki-auth",
+  "private": true,
+  "type": "module",
+  "description": "포키 후원 연동 인증 페이지 (Cloudflare Worker)",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
