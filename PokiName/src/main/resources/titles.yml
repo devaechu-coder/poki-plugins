@@ -1,109 +1,112 @@
-# 칭호 목록
-# - id      : 명령어에 쓰는 이름 (/칭호 지급 <마크닉> <id>)
-# - name    : 칭호 이름
-# - glyph   : 리소스팩(PokiTitles)의 배지 글자 코드 — 리소스팩 font/default.json 과 맞아야 함
-# - chat    : Tab 목록·채팅에 붙는 글씨 (배지는 한 줄에 안 들어가서 색 글씨로)
-# - tier    : 등급 (표시용)
-# 새 칭호: 리소스팩에 배지 PNG + 글자 코드 추가 → 여기 한 줄 추가 → /칭호 리로드
+# 칭호 목록 — 맨 앞 이름(id)이 명령어에 쓰는 이름. 띄어쓰기 대신 _
+#   /칭호 지급 <마크닉> 포켓몬_마스터   (띄어쓰기 그대로 '포켓몬 마스터' 도 됨)
+# - name  : 칭호 이름
+# - glyph : 리소스팩(PokiTitles-RP) 배지 글자 코드 — font/default.json 과 맞아야 함
+# - chat  : Tab 목록·채팅에 붙는 글씨 (배지는 한 줄에 안 들어가서 색 글씨로)
+# - tier  : 등급 (표시용, 마음대로 바꿔도 됨)
+# 새 칭호: 리소스팩에 배지 PNG + 글자 코드 추가 → 여기 추가 → /칭호 리로드
+
+# 기본 칭호 목록 버전 (플러그인이 관리 — 건드리지 않기)
+version: 2
 
 titles:
-  beginner:
-    name: '초보 모험가'
+  초보:
+    name: '초보'
     glyph: 'E101'
-    chat: '&#7BD14F&l[초보 모험가]'
+    chat: '&#7BD14F&l[초보]'
     tier: '기본'
-  growth:
-    name: '성장의 길'
+  포키의_친구:
+    name: '포키의 친구'
     glyph: 'E102'
-    chat: '&#9BE36A&l[성장의 길]'
+    chat: '&#FFD24A&l[포키의 친구]'
     tier: '기본'
-  warrior_path:
+  전사의_길:
     name: '전사의 길'
     glyph: 'E103'
     chat: '&#8FC8FF&l[전사의 길]'
     tier: '일반'
-  miner:
+  광산의_달인:
     name: '광산의 달인'
     glyph: 'E104'
-    chat: '&#FFD24A&l[광산의 달인]'
+    chat: '&#FFC93C&l[광산의 달인]'
     tier: '일반'
-  fisher:
+  낚시의_달인:
     name: '낚시의 달인'
     glyph: 'E105'
     chat: '&#5BC8FF&l[낚시의 달인]'
     tier: '일반'
-  explorer:
-    name: '탐험가'
+  포켓볼의_달인:
+    name: '포켓볼의 달인'
     glyph: 'E106'
+    chat: '&#FF5A6E&l[포켓볼의 달인]'
+    tier: '일반'
+  탐험가:
+    name: '탐험가'
+    glyph: 'E107'
     chat: '&#E8C27A&l[탐험가]'
     tier: '일반'
-  villager:
+  마을의_방문자:
     name: '마을의 방문자'
-    glyph: 'E107'
-    chat: '&#F4A3B8&l[마을의 방문자]'
-    tier: '기본'
-  poki_friend:
-    name: '포키의 친구'
     glyph: 'E108'
-    chat: '&#7BE08A&l[포키의 친구]'
+    chat: '&#FF8FC7&l[마을의 방문자]'
     tier: '기본'
-  summer:
-    name: '여름축제 참가자'
+  포키_지킴이:
+    name: '포키 지킴이'
     glyph: 'E109'
-    chat: '&#4FD3FF&l[여름축제 참가자]'
-    tier: '이벤트'
-  halloween:
-    name: '할로윈의 주인공'
+    chat: '&#FF9AC8&l[포키 지킴이]'
+    tier: '특별'
+  길잡이_요정:
+    name: '길잡이 요정'
     glyph: 'E10A'
-    chat: '&#FF9A2E&l[할로윈의 주인공]'
-    tier: '이벤트'
-  trainer:
-    name: '포켓몬 트레이너'
+    chat: '&#7BE08A&l[길잡이 요정]'
+    tier: '특별'
+  관동리그_챔피언:
+    name: '관동리그 챔피언'
     glyph: 'E10B'
-    chat: '&#FFC93C&l[포켓몬 트레이너]'
+    chat: '&#FFD700&l[관동리그 챔피언]'
     tier: '희귀'
-  master:
-    name: '포켓몬 마스터'
+  레이드_마스터:
+    name: '레이드 마스터'
     glyph: 'E10C'
-    chat: '&#FFB000&l[포켓몬 마스터]'
+    chat: '&#C77DFF&l[레이드 마스터]'
     tier: '희귀'
-  collector:
-    name: '전설의 수집가'
+  포키_운영진:
+    name: '포키 운영진'
     glyph: 'E10D'
-    chat: '&#C77DFF&l[전설의 수집가]'
-    tier: '희귀'
-  gym_champion:
-    name: '체육관 챔피언'
+    chat: '&#6FB6FF&l[포키 운영진]'
+    tier: '특별'
+  전설의_트레이너:
+    name: '전설의 트레이너'
     glyph: 'E10E'
-    chat: '&#6FB6FF&l[체육관 챔피언]'
+    chat: '&#FFE066&l[전설의 트레이너]'
     tier: '희귀'
-  christmas:
-    name: '크리스마스 요정'
+  포켓몬_트레이너:
+    name: '포켓몬 트레이너'
     glyph: 'E10F'
-    chat: '&#4CD964&l[크리스마스 요정]'
-    tier: '이벤트'
-  sakura:
-    name: '벚꽃의 여행자'
+    chat: '&#FF7A7A&l[포켓몬 트레이너]'
+    tier: '희귀'
+  포켓몬_마스터:
+    name: '포켓몬 마스터'
     glyph: 'E110'
-    chat: '&#FF8FC7&l[벚꽃의 여행자]'
-    tier: '이벤트'
-  donor:
-    name: '후원자'
+    chat: '&#7FDBFF&l[포켓몬 마스터]'
+    tier: '희귀'
+  전설의_수집가:
+    name: '전설의 수집가'
     glyph: 'E111'
-    chat: '&#FF6FB5&l[후원자]'
-    tier: '특별'
-  legend_warrior:
-    name: '전설의 전사'
+    chat: '&#FFD24A&l[전설의 수집가]'
+    tier: '희귀'
+  체육관_챔피언:
+    name: '체육관 챔피언'
     glyph: 'E112'
-    chat: '&#FF4D4D&l[전설의 전사]'
-    tier: '특별'
-  hero:
+    chat: '&#FF8C42&l[체육관 챔피언]'
+    tier: '희귀'
+  서버의_영웅:
     name: '서버의 영웅'
     glyph: 'E113'
     chat: '&#FFD700&l[서버의 영웅]'
     tier: '특별'
-  staff:
-    name: 'Poki 스태프'
+  후원자:
+    name: '후원자'
     glyph: 'E114'
-    chat: '&#3FA9F5&l[Poki 스태프]'
+    chat: '&#FF6FB5&l[후원자]'
     tier: '특별'

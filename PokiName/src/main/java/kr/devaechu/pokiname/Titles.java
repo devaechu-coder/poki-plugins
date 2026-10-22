@@ -47,6 +47,8 @@ final class Titles implements CommandExecutor, TabCompleter {
 
     static final String TAG = "pokiname_title";
     static final String ADMIN = "pokiname.title.admin";
+    /** 기본 titles.yml 의 version — 기본 칭호 목록을 바꿀 때 올림 (서버의 옛 titles.yml 을 새 것으로 교체) */
+    static final int DEFS_VERSION = 2;
 
     record Def(String id, String name, String glyph, String chat, String tier) { }
 
@@ -70,7 +72,15 @@ final class Titles implements CommandExecutor, TabCompleter {
 
     void load() {
         defsFile = new File(plugin.getDataFolder(), "titles.yml");
-        if (!defsFile.exists()) plugin.saveResource("titles.yml", false);
+        if (!defsFile.exists()) {
+            plugin.saveResource("titles.yml", false);
+        } else if (YamlConfiguration.loadConfiguration(defsFile).getInt("version", 1) < DEFS_VERSION) {
+            // 칭호 목록이 새로 바뀜 → 옛 파일은 백업하고 새 목록으로
+            File old = new File(plugin.getDataFolder(), "titles.yml.old");
+            if (old.exists()) old.delete();
+            if (defsFile.renameTo(old)) plugin.getLogger().info("칭호 목록이 바뀌어 titles.yml 을 새로 만듦 (옛 파일: titles.yml.old)");
+            plugin.saveResource("titles.yml", true);
+        }
         dataFile = new File(plugin.getDataFolder(), "player-titles.yml");
         loadDefs();
         loadPlayers();
@@ -269,7 +279,7 @@ final class Titles implements CommandExecutor, TabCompleter {
                 if (!admin) { noPerm(s); return true; }
                 s.sendMessage(PokiName.color("&e칭호 전체 (" + defs.size() + "개)"));
                 for (Def d : defs.values())
-                    s.sendMessage(PokiName.color("&7- &8[" + d.tier() + "] " + d.chat() + " &7id: &f" + d.id()));
+                    s.sendMessage(PokiName.color("&7- &8[" + d.tier() + "] " + d.chat() + " &7명령어: &f" + d.id()));
             }
             case "리로드", "reload" -> {
                 if (!admin) { noPerm(s); return true; }
@@ -312,12 +322,12 @@ final class Titles implements CommandExecutor, TabCompleter {
 
     private void usage(CommandSender s, String label) {
         s.sendMessage(PokiName.color("&e/" + label + " &7- 내 칭호 목록 (눌러서 장착)"));
-        s.sendMessage(PokiName.color("&e/" + label + " 장착 <id> &7/ &e/" + label + " 해제"));
+        s.sendMessage(PokiName.color("&e/" + label + " 장착 <칭호> &7/ &e/" + label + " 해제"));
         if (s.hasPermission(ADMIN)) {
-            s.sendMessage(PokiName.color("&6/" + label + " 지급 <마크닉> <id|전체> &7- 칭호 주기"));
-            s.sendMessage(PokiName.color("&6/" + label + " 회수 <마크닉> <id|전체> &7- 칭호 뺏기"));
+            s.sendMessage(PokiName.color("&6/" + label + " 지급 <마크닉> <칭호|전체> &7- 칭호 주기"));
+            s.sendMessage(PokiName.color("&6/" + label + " 회수 <마크닉> <칭호|전체> &7- 칭호 뺏기"));
             s.sendMessage(PokiName.color("&6/" + label + " 보기 <마크닉> &7- 가진 칭호 보기"));
-            s.sendMessage(PokiName.color("&6/" + label + " 전체 &7- 칭호 id 목록"));
+            s.sendMessage(PokiName.color("&6/" + label + " 전체 &7- 칭호 목록"));
             s.sendMessage(PokiName.color("&6/" + label + " 리로드 &7- titles.yml 다시 불러오기"));
         }
     }
@@ -360,6 +370,8 @@ final class Titles implements CommandExecutor, TabCompleter {
     Def find(String key) {
         if (key == null) return null;
         Def d = defs.get(key.toLowerCase(Locale.ROOT));
+        if (d != null) return d;
+        d = defs.get(key.trim().replace(' ', '_').toLowerCase(Locale.ROOT));
         if (d != null) return d;
         String k = key.replace('_', ' ').trim();
         for (Def x : defs.values()) if (x.name().equals(k)) return x;
@@ -430,6 +442,29 @@ final class Titles implements CommandExecutor, TabCompleter {
         }
     }
 
+    /** 예전(1.5.0) 영어 id → 지금 한글 id. 저장 파일에 남은 옛 id 를 불러올 때 바꿔줌 */
+    private static final Map<String, String> OLD_IDS = Map.ofEntries(
+            Map.entry("beginner", "초보"),
+            Map.entry("poki_friend", "포키의_친구"),
+            Map.entry("warrior_path", "전사의_길"),
+            Map.entry("miner", "광산의_달인"),
+            Map.entry("fisher", "낚시의_달인"),
+            Map.entry("explorer", "탐험가"),
+            Map.entry("villager", "마을의_방문자"),
+            Map.entry("trainer", "포켓몬_트레이너"),
+            Map.entry("master", "포켓몬_마스터"),
+            Map.entry("collector", "전설의_수집가"),
+            Map.entry("gym_champion", "체육관_챔피언"),
+            Map.entry("legend_warrior", "전설의_트레이너"),
+            Map.entry("hero", "서버의_영웅"),
+            Map.entry("donor", "후원자"),
+            Map.entry("staff", "포키_운영진"));
+
+    private static String migrate(String id) {
+        String k = id.toLowerCase(Locale.ROOT);
+        return OLD_IDS.getOrDefault(k, k);
+    }
+
     private void loadPlayers() {
         players.clear();
         if (!dataFile.exists()) return;
@@ -442,9 +477,9 @@ final class Titles implements CommandExecutor, TabCompleter {
                 if (ps == null) continue;
                 Owned o = new Owned();
                 o.name = ps.getString("name");
-                for (String t : ps.getStringList("owned")) o.owned.add(t.toLowerCase(Locale.ROOT));
+                for (String t : ps.getStringList("owned")) o.owned.add(migrate(t));
                 String eq = ps.getString("equipped");
-                o.equipped = eq == null || eq.isEmpty() ? null : eq.toLowerCase(Locale.ROOT);
+                o.equipped = eq == null || eq.isEmpty() ? null : migrate(eq);
                 players.put(UUID.fromString(key), o);
             } catch (IllegalArgumentException ignored) {
             }
