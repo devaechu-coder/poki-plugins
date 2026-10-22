@@ -51,7 +51,7 @@ abstract class Rank {
         ConfigurationSection c = section();
         if (!c.getBoolean("enabled", true) || !prepare()) return;
         long every = Math.max(2, c.getLong("interval-seconds", 10)) * 20L;
-        plugin.getLogger().info(label + " 순위 켜짐 — " + (every / 20) + "초마다, 제외: " + c.getStringList("exclude")
+        plugin.getLogger().info(label + " 순위 켜짐 — " + (every / 20) + "초마다, 제외: " + excludeList()
                 + ", 1등 변경 명령어 " + c.getStringList("on-first-change").size() + "개");
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::refresh, 40L, every);
     }
@@ -71,19 +71,39 @@ abstract class Rank {
         int size = Math.max(1, Math.min(50, c.getInt("size", 10)));
         boolean hideZero = c.getBoolean("hide-zero", true);
         Set<String> exclude = new HashSet<>();
-        for (String s : c.getStringList("exclude")) exclude.add(s.toLowerCase(Locale.ROOT));
+        for (String s : excludeList()) exclude.add(s.toLowerCase(Locale.ROOT));
 
         List<Entry> all = new ArrayList<>();
         for (Entry e : collect()) {
             if (e.name() == null || Double.isNaN(e.value()) || (hideZero && e.value() < 1)) continue;
             // 마크닉·한글닉 둘 다로 뺄 수 있음
             if (exclude.contains(e.name().toLowerCase(Locale.ROOT))
-                    || exclude.contains(plugin.nickOf(e.id(), e.name()).toLowerCase(Locale.ROOT))) continue;
+                    || exclude.contains(PokiName.stripColor(plugin.nickOf(e.id(), e.name())).trim().toLowerCase(Locale.ROOT))) continue;
             all.add(e);
         }
         all.sort((a, b) -> Double.compare(b.value(), a.value()));
         top = List.copyOf(all.subList(0, Math.min(size, all.size())));
         onFirstChanged();
+    }
+
+    /**
+     * 순위에서 뺄 사람 — 맨 위 rank-exclude(모든 순위 공통) + 이 순위의 exclude.
+     * 리스트([a, b])도, 쉼표로 쓴 글자("a, b")도, 한 명("a")도 받음. 색 코드·앞뒤 띄어쓰기는 무시.
+     */
+    List<String> excludeList() {
+        List<String> out = new ArrayList<>();
+        readNames(plugin.getConfig(), "rank-exclude", out);
+        readNames(section(), "exclude", out);
+        return out;
+    }
+
+    private static void readNames(ConfigurationSection c, String path, List<String> out) {
+        if (c == null || !c.contains(path)) return;
+        List<String> raw = c.isList(path) ? c.getStringList(path) : List.of(String.valueOf(c.getString(path, "")).split(","));
+        for (String n : raw) {
+            String v = n == null ? "" : PokiName.stripColor(n).trim();
+            if (!v.isEmpty() && !out.contains(v)) out.add(v);
+        }
     }
 
     /** 1등이 바뀌면 config 의 명령어 실행 (예: 1등 NPC 스킨 바꾸기) */

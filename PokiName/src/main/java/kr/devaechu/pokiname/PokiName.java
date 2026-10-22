@@ -71,6 +71,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        warnConfigError(null);
         upgradeConfig();
         dataFile = new File(getDataFolder(), "nicknames.yml");
         loadNicks();
@@ -212,7 +213,33 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
      * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기, 1등 NPC 이름 바꾸기 명령어 추가 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
      */
+    /** config.yml 문법 오류 확인. 오류면 그 내용, 괜찮으면 null (오류가 있으면 마크가 config 를 통째로 무시하고 기본값을 씀) */
+    String configError() {
+        File f = new File(getDataFolder(), "config.yml");
+        if (!f.exists()) return null;
+        try {
+            new YamlConfiguration().load(f);
+            return null;
+        } catch (Exception ex) {
+            return ex.getMessage();
+        }
+    }
+
+    private void warnConfigError(CommandSender s) {
+        String err = configError();
+        if (err == null) return;
+        getLogger().severe("config.yml 에 문법 오류가 있어서 설정 전체가 무시되고 기본값으로 돌아가는 중! (순위 제외·문구 등 다 안 먹음)");
+        getLogger().severe(err);
+        if (s != null && !(s instanceof org.bukkit.command.ConsoleCommandSender))
+            s.sendMessage(color("&c&lconfig.yml 문법 오류! &c설정이 다 무시되고 있어요. 콘솔에 몇째 줄인지 나와요."));
+    }
+
     private void upgradeConfig() {
+        if (configError() != null) {
+            // 문법 오류로 비어 있는 설정을 저장하면 파일이 날아가니까 절대 저장 안 함
+            getLogger().warning("config.yml 문법 오류 때문에 자동 고치기를 건너뜀 — 오류를 고친 뒤 다시 켜주세요");
+            return;
+        }
         FileConfiguration c = getConfig();
         int ver = c.contains("config-version", true) ? c.getInt("config-version", 1) : 1;
         if (ver >= CONFIG_VERSION) return;
@@ -414,6 +441,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             }
             case "리로드", "reload" -> {
                 reloadConfig();
+                warnConfigError(s);
                 loadNicks();
                 titles.load();
                 titles.removeAll();
@@ -529,6 +557,12 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     private static String teamName(UUID id) {
         return TEAM_PREFIX + id.toString().replace("-", "").substring(0, 13);
+    }
+
+    /** 색 코드(&a, &#RRGGBB, §a) 빼기 */
+    static String stripColor(String s) {
+        if (s == null) return "";
+        return ChatColor.stripColor(color(s));
     }
 
     /** &a 같은 색 코드와 &#RRGGBB 헥스 색을 마크 색 코드로 바꾼다. */

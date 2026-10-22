@@ -69,6 +69,10 @@ header:
 # Tab 목록 아래 문구 (비워두면 안 나옴)
 footer: []
 
+# 모든 순위(소지금·코블달러)에서 뺄 사람 — 마크닉이나 한글닉. 예: [Dev_Aechu, 서버총괄]
+# 각 순위의 exclude 와 합쳐짐. 바꾼 뒤 /한글닉 리로드 → 콘솔 "순위 켜짐 … 제외: [...]" 로 확인
+rank-exclude: []
+
 # 소지금 순위 (Vault 경제 = Essentials 돈). 홀로그램에 %pokiname_money_1% ~ %pokiname_money_10% 로 사용
 # 한글닉이 있으면 한글닉으로, 없으면 마크닉으로 나옴. 바꾼 뒤 /한글닉 리로드
 money-rank:
