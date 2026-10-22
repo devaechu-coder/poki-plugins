@@ -71,6 +71,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        upgradeConfig();
         dataFile = new File(getDataFolder(), "nicknames.yml");
         loadNicks();
         titles = new Titles(this);
@@ -202,6 +203,28 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     /** 칭호가 바뀌었을 때 등 — 이름표·Tab·채팅 이름 다시 적용 */
     void refresh(Player p) {
         apply(p);
+    }
+
+    /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
+    private static final int CONFIG_VERSION = 2;
+
+    /**
+     * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
+     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
+     */
+    private void upgradeConfig() {
+        FileConfiguration c = getConfig();
+        int ver = c.contains("config-version", true) ? c.getInt("config-version", 1) : 1;
+        if (ver >= CONFIG_VERSION) return;
+        for (String key : new String[]{"tab-name", "display-name"}) {
+            String v = c.getString(key);
+            if (v != null && !v.contains("{title}")) {
+                c.set(key, "{title}" + v);
+                getLogger().info("config.yml: " + key + " 앞에 칭호 자리({title})를 넣음 → " + c.getString(key));
+            }
+        }
+        c.set("config-version", CONFIG_VERSION);
+        saveConfig();
     }
 
     private boolean displayMode() {

@@ -106,6 +106,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
+- 1.6.1 — 옛 config 의 Tab·채팅 이름에 칭호 자리(`{title}`) 자동 추가, 칭호 글씨 굵게 뺌
 - 1.6.0 — 칭호 20개 새 디자인으로 교체, 칭호를 한글 이름으로 (옛 영어 id 는 자동 변환, 옛 titles.yml 은 titles.yml.old 로 백업)
 - 1.5.0 — 칭호 (머리 위 배지 + Tab·채팅 색 글씨, `/칭호`, `%pokiname_title%`)
 - 1.4.0 — 바이옴 한글 이름 (`%pokiname_biome%`), 긴 이름 두 줄 나누기
