@@ -1,0 +1,24 @@
+name: 인증 페이지 배포
+
+# donate-web 이 바뀐 채로 main 에 올리면 auth.poki.devaechu.com 에 배포
+on:
+  push:
+    branches: [main]
+    paths: ['donate-web/**', '.github/workflows/deploy-auth.yml']
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 배포
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: donate-web
+          secrets: |
+            BRIDGE_SECRET
+        env:
+          BRIDGE_SECRET: ${{ secrets.POKI_BRIDGE_SECRET }}
