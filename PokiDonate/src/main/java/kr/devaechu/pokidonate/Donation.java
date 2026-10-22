@@ -15,7 +15,8 @@ public record Donation(
         String type,              // CHAT / VIDEO
         String message,
         Status status,
-        boolean test
+        boolean test,
+        String note               // 대상 아님 사유 등 (없으면 null)
 ) {
     public enum Status {
         /** 기록됨, 아직 지급 전 */
@@ -24,7 +25,7 @@ public record Donation(
         PAID("지급됨"),
         /** 지급 중 오류 */
         FAILED("실패"),
-        /** 보상 대상 아님 (최소 금액 미만, 미연동 채널 등) */
+        /** 보상 대상 아님 (스트리머가 마크 미접속, 미연동 채널, 최소 금액 미만 등) */
         SKIPPED("대상 아님"),
         /** 관리자가 직접 처리 */
         MANUAL("수동");

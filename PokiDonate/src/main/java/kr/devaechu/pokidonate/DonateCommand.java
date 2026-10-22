@@ -130,7 +130,8 @@ final class DonateCommand implements TabExecutor {
                 StringBuilder b = new StringBuilder("&8#").append(d.id()).append(" &7").append(f.format(new Date(d.receivedAt())))
                         .append(" &e").append(nick(d.donatorNickname())).append(" &a").append(won(d.amount()));
                 if ("VIDEO".equals(d.type())) b.append(" &d[영상]");
-                b.append(" ").append(statusColor(d.status())).append("[").append(d.status().label).append("]");
+                b.append(" ").append(statusColor(d.status())).append("[").append(d.status().label)
+                        .append(d.note() == null ? "" : " · " + d.note()).append("]");
                 if (d.test()) b.append(" &8(테스트)");
                 if (all) b.append(" &8→ &f").append(d.streamerName() == null ? "미연동 채널" : plain(d.streamerName()));
                 out.add(b.toString());
@@ -185,9 +186,10 @@ final class DonateCommand implements TabExecutor {
         try { amount = Long.parseLong(a[1].replace(",", "")); } catch (NumberFormatException e) { msg(s, "&c금액은 숫자로 적어주세요."); return; }
         String text = a.length > 2 ? String.join(" ", Arrays.copyOfRange(a, 2, a.length)) : "테스트 후원";
         String donor = s instanceof Player p ? p.getName() + " (테스트)" : "콘솔 (테스트)";
-        plugin.record(new Donation(0, System.currentTimeMillis(), l.channelId(), l.uuid(), l.playerName(),
-                "test", donor, amount, "CHAT", text, Donation.Status.PENDING, true));
-        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요.");
+        Donation d = plugin.donation(l.channelId(), l, "test", donor, amount, "CHAT", text, true);
+        plugin.record(d);
+        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요."
+                + (d.status() == Donation.Status.SKIPPED ? " &7(마크 미접속이라 '대상 아님')" : ""));
     }
 
     // ── 공통 ────────────────────────────────────────────

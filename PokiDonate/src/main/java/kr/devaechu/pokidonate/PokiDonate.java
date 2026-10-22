@@ -5,10 +5,16 @@ import com.google.gson.JsonObject;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -19,11 +25,13 @@ import java.util.logging.Level;
  * 포키 치지직 후원 연동.
  * 1단계: 채널 연동 + 후원 수신 + 장부 기록 (보상 지급은 다음 단계).
  */
-public final class PokiDonate extends JavaPlugin implements SessionManager.Sink, LinkFlow.Events {
+public final class PokiDonate extends JavaPlugin implements SessionManager.Sink, LinkFlow.Events, Listener {
 
     static final String PREFIX = "&6[후원] &f";
 
     private final Links links = new Links();
+    /** 지금 마크에 접속 중인 사람 (후원 이벤트는 다른 스레드에서 오니까 따로 들고 있음) */
+    private final Set<UUID> online = ConcurrentHashMap.newKeySet();
     private Db db;
     private ChzzkApi api;
     private TokenKeeper tokens;
@@ -50,6 +58,9 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
             return;
         }
         links.load(db.loadLinks().join());
+
+        for (Player p : Bukkit.getOnlinePlayers()) online.add(p.getUniqueId());
+        Bukkit.getPluginManager().registerEvents(this, this);
 
         DonateCommand cmd = new DonateCommand(this);
         var command = getCommand("donate");
@@ -123,18 +134,33 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
         };
     }
 
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) { online.add(e.getPlayer().getUniqueId()); }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) { online.remove(e.getPlayer().getUniqueId()); }
+
     // ── 후원 수신 (세션 스레드) ──────────────────────────
 
     @Override
     public void onDonation(JsonObject d) {
         String channelId = ChzzkApi.str(d, "channelId");
         Link l = links.byChannel(channelId);
-        Donation don = new Donation(0, System.currentTimeMillis(), channelId,
-                l == null ? null : l.uuid(), l == null ? null : l.playerName(),
-                ChzzkApi.str(d, "donatorChannelId"), ChzzkApi.str(d, "donatorNickname"),
-                amount(d.get("payAmount")), ChzzkApi.str(d, "donationType"), ChzzkApi.str(d, "donationText"),
-                l == null ? Donation.Status.SKIPPED : Donation.Status.PENDING, false);
-        record(don);
+        record(donation(channelId, l, ChzzkApi.str(d, "donatorChannelId"), ChzzkApi.str(d, "donatorNickname"),
+                amount(d.get("payAmount")), ChzzkApi.str(d, "donationType"), ChzzkApi.str(d, "donationText"), false));
+    }
+
+    /**
+     * 보상 대상인지 정해서 장부 한 줄을 만든다.
+     * 방송 중이라도 스트리머가 마크에 접속해 있지 않으면 보상 대상이 아니다 (기록은 '대상 아님'으로 남김).
+     */
+    Donation donation(String channelId, Link l, String donatorId, String donatorNick, long amount, String type, String text, boolean test) {
+        Donation.Status st = Donation.Status.PENDING;
+        String note = null;
+        if (l == null) { st = Donation.Status.SKIPPED; note = "미연동 채널"; }
+        else if (!online.contains(l.uuid())) { st = Donation.Status.SKIPPED; note = "마크 미접속"; }
+        return new Donation(0, System.currentTimeMillis(), channelId, l == null ? null : l.uuid(), l == null ? null : l.playerName(),
+                donatorId, donatorNick, amount, type, text, st, test, note);
     }
 
     /** 장부에 쓰고 알림. /후원 테스트 도 여기로 온다 */
@@ -146,7 +172,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
             }
             getLogger().info("후원 #" + id + (don.test() ? " (테스트)" : "") + " " + (don.streamerName() == null ? don.channelId() : don.streamerName())
                     + " ← " + don.donatorNickname() + " " + won(don.amount()) + " [" + don.type() + "] " + don.message());
-            if (don.streamerUuid() != null && getConfig().getBoolean("notify-streamer", true)) {
+            if (don.status() == Donation.Status.PENDING && getConfig().getBoolean("notify-streamer", true)) {
                 tell(don.streamerUuid(), "&e" + nick(don.donatorNickname()) + "&f님 &a" + won(don.amount())
                         + (don.test() ? " &7(테스트)" : "") + " &8· 장부 #" + id);
             }

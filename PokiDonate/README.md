@@ -26,12 +26,11 @@
 | 그룹 | 줄 권한 |
 | --- | --- |
 | 입주민 | `poki.donate.streamer` |
-| 운영진 | `poki.donate.streamer`, `poki.donate.staff` (다음 단계에서 서버 전체 이벤트용) |
+| 운영진 | `poki.donate.staff` (입주민 권한 포함, 다음 단계에서 서버 전체 이벤트용) |
 | 관리자 | `poki.donate.admin` (streamer 포함, OP 기본) |
 
 ```
 /lp group 입주민 permission set poki.donate.streamer true
-/lp group 운영진 permission set poki.donate.streamer true
 /lp group 운영진 permission set poki.donate.staff true
 /lp group 관리자 permission set poki.donate.admin true
 ```
@@ -51,8 +50,11 @@
 ```
 /후원 연동 → auth.poki.devaechu.com (donate-web) → 치지직 권한 허용
          → 인증 페이지가 코드 보관 → 플러그인이 3초마다 가져감 → 토큰 발급·채널 확인·저장
-치지직 세션 서버 ──후원 이벤트──▶ 플러그인 ──▶ 장부(donate.db) 기록 (상태: 대기)
+치지직 세션 서버 ──후원 이벤트──▶ 플러그인 ──▶ 장부(donate.db) 기록
 ```
+
+- 스트리머가 그 순간 **마크에 접속 중**이면 `대기`(보상 대상), 아니면 `대상 아님 · 마크 미접속` 으로 남는다
+- 연동 안 된 채널의 후원은 `대상 아님 · 미연동 채널`
 
 - 클라이언트 세션 하나에 스트리머 25명씩 묶어서 구독한다 (치지직 한도: 세션당 구독 30개, 연결 10개)
 - 연결이 끊기면 5초→10초→…최대 2분 간격으로 새 세션을 받아 다시 붙고 구독도 다시 한다
@@ -84,4 +86,4 @@ SQLite 드라이버는 서버에 들어있는 것(CoreProtect 가 쓰는 것과 
 
 ## 버전 기록
 
-- 1.0.0 — 치지직 공식 API 연동, 후원 수신, 장부 기록, 관리 명령어
+- 1.0.0 — 치지직 공식 API 연동, 후원 수신, 장부 기록, 관리 명령어. 마크 미접속 중 후원은 보상 대상 아님, 운영진 권한 하나로 통합

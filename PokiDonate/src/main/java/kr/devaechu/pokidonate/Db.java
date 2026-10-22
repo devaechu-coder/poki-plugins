@@ -62,7 +62,8 @@ class Db {
                           type TEXT,
                           message TEXT,
                           status TEXT NOT NULL,
-                          test INTEGER NOT NULL DEFAULT 0)""");
+                          test INTEGER NOT NULL DEFAULT 0,
+                          note TEXT)""");
                 s.execute("CREATE INDEX IF NOT EXISTS donation_channel ON donation(channel_id, id)");
                 s.execute("CREATE INDEX IF NOT EXISTS donation_status ON donation(status)");
                 s.execute("""
@@ -147,7 +148,7 @@ class Db {
         return submit(c -> {
             try (PreparedStatement p = c.prepareStatement("""
                     INSERT INTO donation (received_at, channel_id, streamer_uuid, streamer_name, donator_channel_id,
-                      donator_nickname, amount, type, message, status, test) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                      donator_nickname, amount, type, message, status, test, note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
                     Statement.RETURN_GENERATED_KEYS)) {
                 p.setLong(1, d.receivedAt());
                 p.setString(2, d.channelId());
@@ -160,6 +161,7 @@ class Db {
                 p.setString(9, d.message());
                 p.setString(10, d.status().name());
                 p.setInt(11, d.test() ? 1 : 0);
+                p.setString(12, d.note());
                 p.executeUpdate();
                 try (ResultSet k = p.getGeneratedKeys()) { return k.next() ? k.getLong(1) : -1L; }
             }
@@ -183,7 +185,7 @@ class Db {
                                 su == null ? null : UUID.fromString(su), r.getString("streamer_name"),
                                 r.getString("donator_channel_id"), r.getString("donator_nickname"), r.getLong("amount"),
                                 r.getString("type"), r.getString("message"), Donation.Status.valueOf(r.getString("status")),
-                                r.getInt("test") == 1));
+                                r.getInt("test") == 1, r.getString("note")));
                     }
                 }
                 return out;
