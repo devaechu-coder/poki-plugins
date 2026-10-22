@@ -1,0 +1,168 @@
+# 바이옴 표시 이름 — %pokiname_biome% 에 쓰임
+# 키: 바이옴 이름(네임스페이스 없이). 없는 바이옴은 영어 이름을 보기 좋게 바꿔서 보여줌 (예: Orchid Swamp)
+# 고친 뒤 /한글닉 리로드
+names:
+  # ── 기본 마크 ──
+  plains: 평원
+  sunflower_plains: 해바라기 평원
+  snowy_plains: 눈 덮인 평원
+  ice_spikes: 역고드름
+  desert: 사막
+  swamp: 늪
+  mangrove_swamp: 맹그로브 늪
+  forest: 숲
+  flower_forest: 꽃 숲
+  birch_forest: 자작나무 숲
+  dark_forest: 어두운 숲
+  old_growth_birch_forest: 자작나무 원시림
+  old_growth_pine_taiga: 소나무 원시 타이가
+  old_growth_spruce_taiga: 가문비나무 원시 타이가
+  taiga: 타이가
+  snowy_taiga: 눈 덮인 타이가
+  savanna: 사바나
+  savanna_plateau: 사바나 고원
+  windswept_hills: 바람이 세찬 언덕
+  windswept_gravelly_hills: 바람이 세찬 자갈 언덕
+  windswept_forest: 바람이 세찬 숲
+  windswept_savanna: 바람이 세찬 사바나
+  jungle: 정글
+  sparse_jungle: 듬성듬성한 정글
+  bamboo_jungle: 대나무 정글
+  badlands: 악지
+  eroded_badlands: 침식된 악지
+  wooded_badlands: 나무가 우거진 악지
+  meadow: 목초지
+  cherry_grove: 벚나무 숲
+  grove: 산림
+  snowy_slopes: 눈 덮인 비탈
+  frozen_peaks: 언 봉우리
+  jagged_peaks: 뾰족한 봉우리
+  stony_peaks: 돌 봉우리
+  river: 강
+  frozen_river: 언 강
+  beach: 해변
+  snowy_beach: 눈 덮인 해변
+  stony_shore: 돌 해안
+  warm_ocean: 따뜻한 바다
+  lukewarm_ocean: 미지근한 바다
+  deep_lukewarm_ocean: 깊은 미지근한 바다
+  ocean: 바다
+  deep_ocean: 깊은 바다
+  cold_ocean: 차가운 바다
+  deep_cold_ocean: 깊은 차가운 바다
+  frozen_ocean: 언 바다
+  deep_frozen_ocean: 깊은 언 바다
+  mushroom_fields: 버섯 들판
+  dripstone_caves: 점적석 동굴
+  lush_caves: 무성한 동굴
+  deep_dark: 깊은 어둠
+  nether_wastes: 네더 황무지
+  warped_forest: 뒤틀린 숲
+  crimson_forest: 진홍빛 숲
+  soul_sand_valley: 영혼 모래 골짜기
+  basalt_deltas: 현무암 삼각주
+  the_end: 디 엔드
+  end_highlands: 엔드 고지
+  end_midlands: 엔드 중지
+  small_end_islands: 작은 엔드 섬
+  end_barrens: 엔드 불모지
+  the_void: 공허
+  # ── Terralith ──
+  alpha_islands: 알파 군도
+  alpha_islands_winter: 겨울 알파 군도
+  alpine_grove: 고산 숲
+  alpine_highlands: 고산 고원
+  amethyst_canyon: 자수정 협곡
+  amethyst_rainforest: 자수정 우림
+  ancient_sands: 고대 모래사막
+  arid_highlands: 메마른 고원
+  ashen_savanna: 잿빛 사바나
+  basalt_cliffs: 현무암 절벽
+  birch_taiga: 자작나무 타이가
+  blooming_plateau: 꽃 핀 고원
+  blooming_valley: 꽃 핀 계곡
+  brushland: 덤불 지대
+  bryce_canyon: 브라이스 협곡
+  caldera: 칼데라
+  cloud_forest: 구름 숲
+  cold_shrubland: 추운 관목지
+  desert_canyon: 사막 협곡
+  desert_oasis: 사막 오아시스
+  desert_spires: 사막 첨탑
+  emerald_peaks: 에메랄드 봉우리
+  forested_highlands: 숲 고원
+  fractured_savanna: 갈라진 사바나
+  frozen_cliffs: 얼어붙은 절벽
+  glacial_chasm: 빙하 협곡
+  granite_cliffs: 화강암 절벽
+  gravel_beach: 자갈 해변
+  gravel_desert: 자갈 사막
+  haze_mountain: 안개 산
+  highlands: 고원
+  hot_shrubland: 더운 관목지
+  ice_marsh: 얼음 습지
+  jungle_mountains: 정글 산맥
+  lavender_forest: 라벤더 숲
+  lavender_valley: 라벤더 계곡
+  lush_desert: 푸른 사막
+  lush_valley: 푸른 계곡
+  mirage_isles: 신기루 섬
+  moonlight_grove: 달빛 숲
+  moonlight_valley: 달빛 계곡
+  orchid_swamp: 난초 늪
+  painted_mountains: 채색 산맥
+  red_oasis: 붉은 오아시스
+  rocky_jungle: 바위 정글
+  rocky_mountains: 바위 산맥
+  rocky_shrubland: 바위 관목지
+  sakura_grove: 벚꽃 숲
+  sakura_valley: 벚꽃 계곡
+  sandstone_valley: 사암 계곡
+  savanna_badlands: 사바나 악지
+  savanna_slopes: 사바나 비탈
+  scarlet_mountains: 진홍 산맥
+  shield: 순상지
+  shield_clearing: 순상지 빈터
+  shrubland: 관목지
+  siberian_grove: 시베리아 숲
+  siberian_taiga: 시베리아 타이가
+  skylands: 하늘섬
+  skylands_autumn: 가을 하늘섬
+  skylands_spring: 봄 하늘섬
+  skylands_summer: 여름 하늘섬
+  skylands_winter: 겨울 하늘섬
+  snowy_badlands: 눈 덮인 악지
+  snowy_cherry_grove: 눈 덮인 벚나무 숲
+  snowy_maple_forest: 눈 덮인 단풍 숲
+  snowy_shield: 눈 덮인 순상지
+  steppe: 스텝
+  stony_spires: 돌 첨탑
+  temperate_highlands: 온화한 고원
+  tropical_jungle: 열대 정글
+  valley_clearing: 계곡 빈터
+  volcanic_crater: 화산 분화구
+  volcanic_peaks: 화산 봉우리
+  warm_river: 따뜻한 강
+  warped_mesa: 뒤틀린 메사
+  white_cliffs: 하얀 절벽
+  white_mesa: 하얀 메사
+  windswept_spires: 바람 부는 첨탑
+  wintry_forest: 겨울 숲
+  wintry_lowlands: 겨울 저지대
+  yellowstone: 옐로스톤
+  yosemite_cliffs: 요세미티 절벽
+  yosemite_lowlands: 요세미티 저지대
+  andesite_caves: 안산암 동굴
+  crystal_caves: 수정 동굴
+  deep_caves: 깊은 동굴
+  desert_caves: 사막 동굴
+  diorite_caves: 섬록암 동굴
+  frostfire_caves: 서리불 동굴
+  fungal_caves: 균류 동굴
+  granite_caves: 화강암 동굴
+  ice_caves: 얼음 동굴
+  infested_caves: 벌레 먹은 동굴
+  mantle_caves: 맨틀 동굴
+  thermal_caves: 온천 동굴
+  tuff_caves: 응회암 동굴
+  underground_jungle: 지하 정글

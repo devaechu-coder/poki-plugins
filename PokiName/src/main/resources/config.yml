@@ -77,3 +77,9 @@ cobble-rank:
   # 코블달러 저장 폴더 (비워두면 <기본 월드>/cobbledollarsplayerdata)
   data-folder: ''
   on-first-change: []
+
+# 바이옴 이름 (%pokiname_biome%, 두 줄용 %pokiname_biome_1% / %pokiname_biome_2%)
+# 한글 이름은 plugins/PokiName/biomes.yml 에서 고칠 수 있음
+biome:
+  # 두 줄로 나눌 때 한 줄 최대 글자 수
+  max-length: 10

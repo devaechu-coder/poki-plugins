@@ -14,6 +14,8 @@ import org.bukkit.OfflinePlayer;
  * %pokiname_money_<n>_value%      n등 금액 ($7,199)
  * %pokiname_money_<n>_raw%        n등 금액 숫자 그대로
  * %pokiname_cobble_<n>% ...        코블달러 순위 (money 와 같은 형식)
+ * %pokiname_biome%                지금 있는 바이옴 이름 (한글, 없으면 "Orchid Swamp" 식)
+ * %pokiname_biome_1% / _2%        긴 바이옴 이름을 두 줄로 나눈 것 (biome.max-length 글자 기준)
  */
 final class PokiExpansion extends PlaceholderExpansion {
 
@@ -35,6 +37,12 @@ final class PokiExpansion extends PlaceholderExpansion {
         if (p.equals("nick")) {
             if (player == null) return "";
             return plugin.nickOf(player.getUniqueId(), player.getName() == null ? "" : player.getName());
+        }
+        if (p.equals("biome") || p.equals("biome_1") || p.equals("biome_2")) {
+            BiomeName b = plugin.biomeName();
+            if (b == null || player == null) return "";
+            if (p.equals("biome")) return b.get(player.getUniqueId());
+            return b.part(player.getUniqueId(), p.endsWith("1") ? 1 : 2);
         }
         if (p.startsWith("nick_")) {
             return plugin.nickByName(p.substring(5));

@@ -63,6 +63,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private MoneyRank moneyRank;
     /** 코블달러 순위 (CobbleDollars 모드) */
     private CobbleRank cobbleRank;
+    /** 바이옴 표시 이름 */
+    private BiomeName biomeName;
 
     @Override
     public void onEnable() {
@@ -85,6 +87,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         moneyRank.start();
         cobbleRank = new CobbleRank(this);
         cobbleRank.start();
+        biomeName = new BiomeName(this);
+        biomeName.start();
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PokiExpansion(this).register();
             getLogger().info("PlaceholderAPI 연결: %pokiname_nick%, %pokiname_money_1% 등 사용 가능");
@@ -97,6 +101,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         if (tagTask != null) tagTask.cancel();
         if (moneyRank != null) moneyRank.stop();
         if (cobbleRank != null) cobbleRank.stop();
+        if (biomeName != null) biomeName.stop();
         for (UUID id : new ArrayList<>(tags.keySet())) removeTag(id);
     }
 
@@ -338,6 +343,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 loadNicks();
                 if (moneyRank != null) moneyRank.start();
                 if (cobbleRank != null) cobbleRank.start();
+                if (biomeName != null) biomeName.start();
                 for (Player p : Bukkit.getOnlinePlayers()) apply(p);
                 refreshHeaders();
                 s.sendMessage(color("&a설정을 다시 불러왔어요."));
@@ -393,6 +399,10 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     CobbleRank cobbleRank() {
         return cobbleRank;
+    }
+
+    BiomeName biomeName() {
+        return biomeName;
     }
 
     // ---------- 저장 ----------
