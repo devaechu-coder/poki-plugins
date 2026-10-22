@@ -396,6 +396,12 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 s.sendMessage(color("&e한글닉 목록 (" + nicks.size() + "명)"));
                 for (String[] v : nicks.values()) s.sendMessage(color("&7- &f" + v[0] + " &7→ &e" + v[1]));
             }
+            case "바이옴", "biome" -> {
+                if (!(s instanceof Player p)) { s.sendMessage(color("&c게임 안에서 써주세요.")); return true; }
+                if (biomeName == null) { s.sendMessage(color("&c바이옴 기능이 꺼져 있어요.")); return true; }
+                s.sendMessage(color("&e지금 바이옴"));
+                for (String line : biomeName.debug(p)) s.sendMessage(color("&7- &f" + line));
+            }
             case "리로드", "reload" -> {
                 reloadConfig();
                 loadNicks();
@@ -417,6 +423,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         s.sendMessage(color("&e/" + label + " 설정 <마크닉> <한글닉> &7- 한글닉 지정"));
         s.sendMessage(color("&e/" + label + " 해제 <마크닉> &7- 한글닉 지우기"));
         s.sendMessage(color("&e/" + label + " 목록 &7- 등록된 한글닉 보기"));
+        s.sendMessage(color("&e/" + label + " 바이옴 &7- 지금 바이옴이 어떻게 읽히는지 (한글 이름 확인용)"));
         s.sendMessage(color("&e/" + label + " 리로드 &7- config.yml 다시 불러오기"));
     }
 
@@ -425,7 +432,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         List<String> out = new ArrayList<>();
         if (!s.hasPermission("pokiname.admin")) return out;
         if (a.length == 1) {
-            for (String o : new String[]{"설정", "해제", "목록", "리로드"}) if (o.startsWith(a[0])) out.add(o);
+            for (String o : new String[]{"설정", "해제", "목록", "바이옴", "리로드"}) if (o.startsWith(a[0])) out.add(o);
         } else if (a.length == 2) {
             String sub = a[0].toLowerCase(Locale.ROOT);
             if (sub.equals("설정") || sub.equals("set")) {

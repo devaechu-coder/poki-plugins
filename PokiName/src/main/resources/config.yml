@@ -45,6 +45,18 @@ title:
   vanilla-nametag-offset: 0.6
   # Tab·채팅에 붙는 칭호 글씨 ({title} = titles.yml 의 chat)
   chat-format: '{title}&r '
+  # 서버에서 칭호를 처음 받으면 전체 공지 (칭호 하나씩 지급할 때만, '전체' 지급은 안 침)
+  # 칭호별로 끄려면 titles.yml 에서 그 칭호에 announce-first: false
+  # 오픈 직전에 /칭호 최초초기화 전체 로 테스트 기록 지우기
+  first:
+    enabled: true
+    # 전체 채팅 ({nick} 한글닉, {name} 마크닉, {title} 칭호 글씨, {title_name} 칭호 이름)
+    message: '&6&l[서버 최초] &f{nick} &e님이 {title} &e칭호를 서버에서 처음으로 얻었어요!'
+    # 화면 가운데 큰 글씨 (비우면 안 띄움)
+    screen-title: '&6&l서버 최초!'
+    screen-subtitle: '&f{nick} &7- {title}'
+    # 효과음 (비우면 소리 없음)
+    sound: UI_TOAST_CHALLENGE_COMPLETE
 
 # Tab 목록 위 문구 ({player} 한글닉(없으면 마크닉), {name} 마크닉, {online} 접속자 수, {max} 최대 인원)
 header:
