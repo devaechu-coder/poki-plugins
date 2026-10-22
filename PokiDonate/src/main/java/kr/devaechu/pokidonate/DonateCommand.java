@@ -45,6 +45,9 @@ final class DonateCommand implements TabExecutor {
             case "현황", "status" -> { if (admin(s)) status(s); }
             case "강제해제", "forceunlink" -> { if (admin(s)) forceUnlink(s, rest); }
             case "테스트", "test" -> { if (admin(s)) test(s, rest); }
+            case "미지급", "unpaid" -> { if (admin(s)) unpaid(s, rest); }
+            case "재지급", "repay" -> { if (admin(s)) repay(s, rest); }
+            case "보상표", "rewards" -> rewards(s);
             case "리로드", "reload" -> {
                 if (admin(s)) {
                     plugin.reload();
@@ -191,7 +194,65 @@ final class DonateCommand implements TabExecutor {
             return;
         }
         plugin.record(plugin.donation(l.channelId(), l, "test", donor, amount, "CHAT", text, true));
-        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요.");
+        msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요. &7(보상표대로 바로 지급)");
+    }
+
+    /** /후원 미지급 [페이지] — 대기·실패 */
+    private void unpaid(CommandSender s, String[] a) {
+        int page = a.length > 0 && a[0].matches("\\d+") ? Math.max(1, Integer.parseInt(a[0])) : 1;
+        int size = Math.max(1, plugin.getConfig().getInt("record-page-size", 10));
+        plugin.db().countUnpaid().thenCombine(plugin.db().unpaid(size, (page - 1) * size), (total, rows) -> {
+            List<String> out = new ArrayList<>();
+            int pages = Math.max(1, (total + size - 1) / size);
+            out.add("&7── 미지급 보상 (" + page + "/" + pages + " · " + total + "건) ──");
+            if (rows.isEmpty()) out.add("&a밀린 보상이 없어요.");
+            SimpleDateFormat f = new SimpleDateFormat("MM/dd HH:mm");
+            for (Donation d : rows) {
+                out.add("&8#" + d.id() + " &7" + f.format(new Date(d.receivedAt())) + " &f" + plain(d.streamerName())
+                        + " &8← &e" + nick(d.donatorNickname()) + " &a" + won(d.amount()) + " " + statusColor(d.status())
+                        + "[" + d.status().label + (d.note() == null ? "" : " · " + plain(d.note())) + "]");
+            }
+            if (!rows.isEmpty()) out.add("&7다시 지급: &e/후원 재지급 <번호> &8(대기는 스트리머가 접속하면 자동 지급)");
+            if (page < pages) out.add("&7다음 페이지: &e/후원 미지급 " + (page + 1));
+            return out;
+        }).whenComplete((lines, err) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (err != null) { msg(s, "&c불러오지 못했어요: " + err.getMessage()); return; }
+            for (String line : lines) s.sendMessage(color(line));
+        }));
+    }
+
+    /** /후원 재지급 <번호> */
+    private void repay(CommandSender s, String[] a) {
+        if (a.length == 0 || !a[0].replace("#", "").matches("\\d+")) { msg(s, "&e/후원 재지급 <장부 번호>"); return; }
+        long id = Long.parseLong(a[0].replace("#", ""));
+        plugin.db().donation(id).whenComplete((d, err) -> Bukkit.getScheduler().runTask(plugin, () -> {
+            if (err != null || d == null) { msg(s, "&c#" + id + " 후원을 찾지 못했어요."); return; }
+            if (d.status() == Donation.Status.PAID || d.status() == Donation.Status.MANUAL) {
+                msg(s, "&e#" + id + " 은 이미 " + d.status().label + " 상태예요.");
+                return;
+            }
+            if (d.streamerUuid() == null) { msg(s, "&c#" + id + " 은 연동된 스트리머가 없는 후원이에요."); return; }
+            msg(s, "&f#" + id + " &7→ &f" + plugin.repay(d));
+        }));
+    }
+
+    /** /후원 보상표 */
+    private void rewards(CommandSender s) {
+        Rewards r = plugin.rewards();
+        if (r == null) { msg(s, "&7보상표가 아직 없어요."); return; }
+        msg(s, "&7── 후원 보상표 &8(방송 중 마크 접속해 있을 때만) &7──");
+        s.sendMessage(color("&b입주민"));
+        tiers(s, r.resident);
+        s.sendMessage(color("&d운영진"));
+        tiers(s, r.staff);
+    }
+
+    private static void tiers(CommandSender s, List<Rewards.Tier> list) {
+        if (list.isEmpty()) { s.sendMessage(color("&8  아직 없음")); return; }
+        for (Rewards.Tier t : list) {
+            String how = t.per() > 0 ? won(t.per()) + "당 1개 (최대 " + t.maxCount() + "개)" : "1번";
+            s.sendMessage(color("&7  " + won(t.min()) + " 이상 &8· &f" + how));
+        }
     }
 
     // ── 공통 ────────────────────────────────────────────
@@ -202,13 +263,16 @@ final class DonateCommand implements TabExecutor {
             line(s, "/후원 연동", "내 치지직 채널 연결");
             line(s, "/후원 기록 [페이지]", "내 방송 후원 기록");
             line(s, "/후원 해제", "연동 해제");
+            line(s, "/후원 보상표", "금액별 보상 보기");
         }
         if (s.hasPermission(P_ADMIN)) {
             line(s, "/후원 기록 <이름|전체> [페이지]", "스트리머별·전체 기록");
             line(s, "/후원 현황", "연동·연결 상태");
             line(s, "/후원 강제해제 <이름>", "연동 강제 해제");
-            line(s, "/후원 테스트 <이름> <금액> [메시지]", "가짜 후원 기록");
-            line(s, "/후원 리로드", "config.yml 다시 읽고 재연결");
+            line(s, "/후원 테스트 <이름> <금액> [메시지]", "가짜 후원 기록·지급");
+            line(s, "/후원 미지급 [페이지]", "대기·실패한 보상 모아 보기");
+            line(s, "/후원 재지급 <번호>", "그 후원 보상 다시 지급");
+            line(s, "/후원 리로드", "config.yml · rewards.yml 다시 읽고 재연결");
         }
         if (!s.hasPermission(P_STREAMER) && !s.hasPermission(P_ADMIN)) {
             msg(s, "&7입주민·운영진 스트리머가 방송 후원을 서버와 연결하는 기능이에요.");
@@ -268,8 +332,8 @@ final class DonateCommand implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] a) {
         List<String> out = new ArrayList<>();
         if (a.length == 1) {
-            if (s.hasPermission(P_STREAMER)) out.addAll(List.of("연동", "해제", "기록"));
-            if (s.hasPermission(P_ADMIN)) out.addAll(List.of("기록", "현황", "강제해제", "테스트", "리로드"));
+            if (s.hasPermission(P_STREAMER)) out.addAll(List.of("연동", "해제", "기록", "보상표"));
+            if (s.hasPermission(P_ADMIN)) out.addAll(List.of("기록", "현황", "미지급", "재지급", "강제해제", "테스트", "리로드"));
         } else if (a.length == 2 && s.hasPermission(P_ADMIN)
                 && List.of("기록", "log", "강제해제", "forceunlink", "테스트", "test").contains(a[0].toLowerCase(Locale.ROOT))) {
             if (a[0].equals("기록") || a[0].equalsIgnoreCase("log")) out.add("전체");

@@ -40,6 +40,11 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     private ExecutorService net;
     private ScheduledExecutorService timer;
     private boolean configured;
+    private volatile Rewards rewards;
+    /** 지금 지급 중인 장부 번호 (접속 지급과 즉시 지급이 겹쳐 두 번 주지 않게) */
+    private final Set<Long> paying = ConcurrentHashMap.newKeySet();
+    /** 이번 실행 중 처리 끝난 장부 번호 (DB 반영 전에 같은 줄을 또 집어도 다시 안 주게) */
+    private final Set<Long> settled = ConcurrentHashMap.newKeySet();
 
     @Override
     public void onEnable() {
@@ -58,6 +63,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
             return;
         }
         links.load(db.loadLinks().join());
+        loadRewards();
 
         for (Player p : Bukkit.getOnlinePlayers()) online.add(p.getUniqueId());
         Bukkit.getPluginManager().registerEvents(this, this);
@@ -80,6 +86,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     /** /후원 리로드 */
     void reload() {
         reloadConfig();
+        loadRewards();
         stopServices();
         startServices();
     }
@@ -135,7 +142,16 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent e) { online.add(e.getPlayer().getUniqueId()); }
+    public void onJoin(PlayerJoinEvent e) {
+        UUID u = e.getPlayer().getUniqueId();
+        online.add(u);
+        // 지급 직전에 나갔던 후원이 있으면 지금 지급
+        if (links.get(u) != null) {
+            db.pendingFor(u).thenAccept(list -> {
+                if (!list.isEmpty()) Bukkit.getScheduler().runTaskLater(this, () -> list.forEach(this::pay), 40L);
+            });
+        }
+    }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) { online.remove(e.getPlayer().getUniqueId()); }
@@ -181,7 +197,87 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
                 tell(don.streamerUuid(), "&e" + nick(don.donatorNickname()) + "&f님 &a" + won(don.amount())
                         + (don.test() ? " &7(테스트)" : "") + " &8· 장부 #" + id);
             }
+            if (don.status() == Donation.Status.PENDING) {
+                Donation saved = new Donation(id, don.receivedAt(), don.channelId(), don.streamerUuid(), don.streamerName(),
+                        don.donatorChannelId(), don.donatorNickname(), don.amount(), don.type(), don.message(),
+                        don.status(), don.test(), don.note());
+                Bukkit.getScheduler().runTask(this, () -> pay(saved));
+            }
         });
+    }
+
+    // ── 보상 지급 (메인 스레드) ─────────────────────────
+
+    private void loadRewards() {
+        File f = new File(getDataFolder(), "rewards.yml");
+        if (!f.exists()) saveResource("rewards.yml", false);
+        rewards = Rewards.load(f, getLogger());
+        getLogger().info("보상표: 입주민 " + rewards.resident.size() + "구간 · 운영진 " + rewards.staff.size() + "구간");
+    }
+
+    Rewards rewards() { return rewards; }
+
+    /** 관리자 재지급: 실패·대상 아님 처리된 줄도 다시 시도할 수 있게 */
+    String repay(Donation d) {
+        settled.remove(d.id());
+        return pay(d);
+    }
+
+    /**
+     * 장부 한 줄을 보상표대로 지급. 스트리머가 지금 없으면 '대기' 로 두고 다음 접속 때 지급.
+     * 운영진(poki.donate.staff) 이면 운영진 보상표, 아니면 입주민 보상표.
+     * @return 지급 결과 한 줄 (관리자 재지급 안내용)
+     */
+    String pay(Donation d) {
+        if (d.streamerUuid() == null) return "연동된 스트리머가 없어요";
+        if (settled.contains(d.id())) return "이미 처리된 후원이에요";
+        if (!paying.add(d.id())) return "이미 지급 중이에요";
+        try {
+            Player p = Bukkit.getPlayer(d.streamerUuid());
+            if (p == null) return "스트리머가 접속 중이 아니에요 — 접속하면 자동 지급";
+            boolean staff = p.hasPermission("poki.donate.staff");
+            Rewards r = rewards;
+            Rewards.Tier tier = Rewards.pick(staff ? r.staff : r.resident, d.amount());
+            String profile = staff ? "운영진" : "입주민";
+            if (tier == null) {
+                String why = (staff ? r.staff : r.resident).isEmpty() ? profile + " 보상표 비어 있음" : "최소 금액 미만";
+                db.setStatus(d.id(), Donation.Status.SKIPPED, why);
+                settled.add(d.id());
+                return "대상 아님 (" + why + ")";
+            }
+            int count = tier.count(d.amount());
+            for (String raw : tier.commands()) {
+                String cmd = fill(raw, p.getName(), count, d);
+                boolean ok;
+                try {
+                    ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.startsWith("/") ? cmd.substring(1) : cmd);
+                } catch (RuntimeException ex) {
+                    getLogger().log(Level.WARNING, "후원 #" + d.id() + " 보상 명령어 오류: " + cmd, ex);
+                    ok = false;
+                }
+                if (!ok) {
+                    String head = cmd.length() > 40 ? cmd.substring(0, 40) + "…" : cmd;
+                    db.setStatus(d.id(), Donation.Status.FAILED, "명령어 실패: " + head);
+                    settled.add(d.id());
+                    tellAdmins("&c후원 #" + d.id() + " 보상 지급 실패 &7(" + plain(p.getName()) + ") &f/후원 재지급 " + d.id());
+                    return "실패 — 명령어를 실행하지 못했어요";
+                }
+            }
+            db.setStatus(d.id(), Donation.Status.PAID, profile + " " + won(tier.min()) + "구간 · " + count + "개");
+            settled.add(d.id());
+            getLogger().info("후원 #" + d.id() + " 보상 지급: " + p.getName() + " " + profile + " " + count + "개");
+            if (!tier.message().isBlank()) p.sendMessage(color(PREFIX + fill(tier.message(), plain(p.getName()), count, d)));
+            return "지급 완료 (" + profile + " · " + count + "개)";
+        } finally {
+            paying.remove(d.id());
+        }
+    }
+
+    private static String fill(String s, String player, int count, Donation d) {
+        return s.replace("%player%", player)
+                .replace("%count%", String.valueOf(count))
+                .replace("%amount%", String.valueOf(d.amount()))
+                .replace("%donator%", nick(d.donatorNickname()));
     }
 
     static long amount(JsonElement e) {

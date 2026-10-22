@@ -193,6 +193,63 @@ class Db {
         });
     }
 
+    CompletableFuture<Void> setStatus(long id, Donation.Status status, String note) {
+        return submit(c -> {
+            try (PreparedStatement p = c.prepareStatement("UPDATE donation SET status = ?, note = ? WHERE id = ?")) {
+                p.setString(1, status.name());
+                p.setString(2, note);
+                p.setLong(3, id);
+                p.executeUpdate();
+            }
+            return null;
+        });
+    }
+
+    CompletableFuture<Donation> donation(long id) {
+        return query("SELECT * FROM donation WHERE id = ?", p -> p.setLong(1, id)).thenApply(l -> l.isEmpty() ? null : l.get(0));
+    }
+
+    /** 이 스트리머 앞으로 아직 지급 안 된 것 (접속하면 지급) */
+    CompletableFuture<List<Donation>> pendingFor(UUID uuid) {
+        return query("SELECT * FROM donation WHERE streamer_uuid = ? AND status = 'PENDING' ORDER BY id", p -> p.setString(1, uuid.toString()));
+    }
+
+    /** 대기·실패 (관리자 /후원 미지급) */
+    CompletableFuture<List<Donation>> unpaid(int limit, int offset) {
+        return query("SELECT * FROM donation WHERE status IN ('PENDING','FAILED') ORDER BY id DESC LIMIT ? OFFSET ?",
+                p -> { p.setInt(1, limit); p.setInt(2, offset); });
+    }
+
+    CompletableFuture<Integer> countUnpaid() {
+        return submit(c -> {
+            try (Statement s = c.createStatement(); ResultSet r = s.executeQuery("SELECT COUNT(*) FROM donation WHERE status IN ('PENDING','FAILED')")) {
+                return r.next() ? r.getInt(1) : 0;
+            }
+        });
+    }
+
+    interface Binder { void bind(PreparedStatement p) throws SQLException; }
+
+    private CompletableFuture<List<Donation>> query(String sql, Binder binder) {
+        return submit(c -> {
+            try (PreparedStatement p = c.prepareStatement(sql)) {
+                binder.bind(p);
+                List<Donation> out = new ArrayList<>();
+                try (ResultSet r = p.executeQuery()) { while (r.next()) out.add(row(r)); }
+                return out;
+            }
+        });
+    }
+
+    private static Donation row(ResultSet r) throws SQLException {
+        String su = r.getString("streamer_uuid");
+        return new Donation(r.getLong("id"), r.getLong("received_at"), r.getString("channel_id"),
+                su == null ? null : UUID.fromString(su), r.getString("streamer_name"),
+                r.getString("donator_channel_id"), r.getString("donator_nickname"), r.getLong("amount"),
+                r.getString("type"), r.getString("message"), Donation.Status.valueOf(r.getString("status")),
+                r.getInt("test") == 1, r.getString("note"));
+    }
+
     CompletableFuture<Integer> countDonations(String channelId) {
         return submit(c -> {
             String sql = "SELECT COUNT(*) FROM donation" + (channelId == null ? "" : " WHERE channel_id = ?");
