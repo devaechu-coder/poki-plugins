@@ -65,18 +65,27 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private CobbleRank cobbleRank;
     /** 바이옴 표시 이름 */
     private BiomeName biomeName;
+    /** 칭호 */
+    private Titles titles;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         dataFile = new File(getDataFolder(), "nicknames.yml");
         loadNicks();
+        titles = new Titles(this);
+        titles.load();
 
         Bukkit.getPluginManager().registerEvents(this, this);
         PluginCommand cmd = getCommand("pnick");
         if (cmd != null) {
             cmd.setExecutor(this);
             cmd.setTabCompleter(this);
+        }
+        PluginCommand tcmd = getCommand("ptitle");
+        if (tcmd != null) {
+            tcmd.setExecutor(titles);
+            tcmd.setTabCompleter(titles);
         }
         cleanupStrayTags();
         for (Player p : Bukkit.getOnlinePlayers()) apply(p);
@@ -103,6 +112,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         if (cobbleRank != null) cobbleRank.stop();
         if (biomeName != null) biomeName.stop();
         for (UUID id : new ArrayList<>(tags.keySet())) removeTag(id);
+        if (titles != null) titles.removeAll();
     }
 
     // ---------- 이벤트 ----------
@@ -115,6 +125,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             v[0] = p.getName();
             saveNicks();
         }
+        titles.onJoin(p);
         apply(p);
         refreshHeaders();
     }
@@ -123,6 +134,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     public void onQuit(PlayerQuitEvent e) {
         UUID qid = e.getPlayer().getUniqueId();
         removeTag(qid);
+        titles.remove(qid);
         lastWorld.remove(qid);
         stableTicks.remove(qid);
         // 나간 직후엔 아직 접속자로 잡혀서 1틱 뒤에 갱신
@@ -138,12 +150,20 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         String teamName = teamName(p.getUniqueId());
         Team team = sb.getTeam(teamName);
 
+        String title = titles.chatPrefix(p.getUniqueId());
+
         if (v == null) {
             removeTag(p.getUniqueId());
             tagText.remove(p.getUniqueId());
             if (team != null) team.unregister();
-            p.setPlayerListName(null);
-            p.setDisplayName(null);
+            if (title.isEmpty()) {
+                p.setPlayerListName(null);
+                p.setDisplayName(null);
+            } else {
+                // 한글닉은 없지만 칭호는 있음 → 마크닉 앞에 칭호
+                p.setPlayerListName(color(c.getString("tab-name", "{title}&f{nick}").replace("{title}", title).replace("{nick}", p.getName()).replace("{name}", p.getName())));
+                p.setDisplayName(color(c.getString("display-name", "{title}{nick}").replace("{title}", title).replace("{nick}", p.getName()).replace("{name}", p.getName())));
+            }
             return;
         }
         String nick = v[1];
@@ -175,28 +195,33 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         team.addEntry(p.getName());
 
         // Tab 목록 이름 / 채팅 이름
-        p.setPlayerListName(color(c.getString("tab-name", "&f{nick}").replace("{nick}", nick).replace("{name}", p.getName())));
-        p.setDisplayName(color(c.getString("display-name", "{nick}").replace("{nick}", nick).replace("{name}", p.getName())));
+        p.setPlayerListName(color(c.getString("tab-name", "{title}&f{nick}").replace("{title}", title).replace("{nick}", nick).replace("{name}", p.getName())));
+        p.setDisplayName(color(c.getString("display-name", "{title}{nick}").replace("{title}", title).replace("{nick}", nick).replace("{name}", p.getName())));
+    }
+
+    /** 칭호가 바뀌었을 때 등 — 이름표·Tab·채팅 이름 다시 적용 */
+    void refresh(Player p) {
+        apply(p);
     }
 
     private boolean displayMode() {
         return !"prefix".equalsIgnoreCase(getConfig().getString("nametag.mode", "display"));
     }
 
-    /** 매 틱: 한글닉 글씨를 플레이어 머리 위로 옮긴다. */
+    /** 매 틱: 한글닉 글씨와 칭호 배지를 플레이어 머리 위로 옮긴다. */
     private void tickTags() {
-        if (!displayMode()) return;
         tickCount++;
+        boolean display = displayMode();
         double offset = 0.6;
         try { offset = Double.parseDouble(getConfig().getString("nametag.height-offset", "0.6")); } catch (NumberFormatException ignored) { }
+        double vanillaOffset = getConfig().getDouble("title.vanilla-nametag-offset", 0.6);
         int waitTicks = 20;
         boolean seeThrough = "true".equalsIgnoreCase(getConfig().getString("nametag.see-through", "false"));
         try { waitTicks = Integer.parseInt(getConfig().getString("nametag.spawn-delay-ticks", "20")); } catch (NumberFormatException ignored) { }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             UUID id = p.getUniqueId();
-            String text = tagText.get(id);
-            if (text == null) continue;
+            String text = display ? tagText.get(id) : null;
 
             // 접속·차원 이동 직후: 이름표를 지우고 잠깐 기다렸다가 다시 띄움 (로딩 중 잔상 방지)
             String worldName = p.getWorld().getName();
@@ -204,12 +229,20 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 lastWorld.put(id, worldName);
                 stableTicks.put(id, 0);
                 removeTag(id);
+                titles.remove(id);
                 continue;
             }
             int stable = stableTicks.merge(id, 1, Integer::sum);
 
             boolean hidden = p.isDead() || p.getGameMode() == GameMode.SPECTATOR || p.isInvisible();
-            if (hidden || stable < waitTicks) { removeTag(id); continue; }
+            boolean show = !hidden && stable >= waitTicks;
+
+            // 칭호 배지: 한글닉 글씨가 있으면 그 위, 없으면 원래 이름표 위
+            Location base = p.getLocation().add(0, p.getHeight() + (text != null ? offset : vanillaOffset), 0);
+            titles.tick(p, base, show, seeThrough);
+
+            if (text == null) continue;
+            if (!show) { removeTag(id); continue; }
 
             Location at = p.getLocation().add(0, p.getHeight() + offset, 0);
             TextDisplay d = tags.get(id);
@@ -261,16 +294,18 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private void cleanupOrphanTags() {
         java.util.Set<UUID> live = new java.util.HashSet<>();
         for (TextDisplay d : tags.values()) if (d.isValid()) live.add(d.getUniqueId());
+        live.addAll(titles.liveEntities());
         for (World w : Bukkit.getWorlds())
             for (TextDisplay d : w.getEntitiesByClass(TextDisplay.class))
-                if (d.getScoreboardTags().contains(TAG) && !live.contains(d.getUniqueId())) d.remove();
+                if ((d.getScoreboardTags().contains(TAG) || d.getScoreboardTags().contains(Titles.TAG))
+                        && !live.contains(d.getUniqueId())) d.remove();
     }
 
     /** 서버가 꺼질 때 못 지운 이름표 글씨 정리 */
     private void cleanupStrayTags() {
         for (World w : Bukkit.getWorlds())
             for (TextDisplay d : w.getEntitiesByClass(TextDisplay.class))
-                if (d.getScoreboardTags().contains(TAG)) d.remove();
+                if (d.getScoreboardTags().contains(TAG) || d.getScoreboardTags().contains(Titles.TAG)) d.remove();
     }
 
     private void refreshHeaders() {
@@ -341,6 +376,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             case "리로드", "reload" -> {
                 reloadConfig();
                 loadNicks();
+                titles.load();
+                titles.removeAll();
                 if (moneyRank != null) moneyRank.start();
                 if (cobbleRank != null) cobbleRank.start();
                 if (biomeName != null) biomeName.start();
@@ -403,6 +440,10 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     BiomeName biomeName() {
         return biomeName;
+    }
+
+    Titles titles() {
+        return titles;
     }
 
     // ---------- 저장 ----------

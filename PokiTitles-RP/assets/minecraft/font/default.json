@@ -1,0 +1,184 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/beginner.png",
+      "height": 19,
+      "ascent": 17,
+      "chars": [
+        "\ue101"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/growth.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue102"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/warrior_path.png",
+      "height": 21,
+      "ascent": 19,
+      "chars": [
+        "\ue103"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/miner.png",
+      "height": 21,
+      "ascent": 19,
+      "chars": [
+        "\ue104"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/fisher.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue105"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/explorer.png",
+      "height": 18,
+      "ascent": 16,
+      "chars": [
+        "\ue106"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/villager.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue107"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/poki_friend.png",
+      "height": 18,
+      "ascent": 16,
+      "chars": [
+        "\ue108"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/summer.png",
+      "height": 19,
+      "ascent": 17,
+      "chars": [
+        "\ue109"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/halloween.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue10a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/trainer.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue10b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/master.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue10c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/collector.png",
+      "height": 18,
+      "ascent": 16,
+      "chars": [
+        "\ue10d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/gym_champion.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue10e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/christmas.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue10f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/sakura.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue110"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/donor.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue111"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/legend_warrior.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue112"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/hero.png",
+      "height": 20,
+      "ascent": 18,
+      "chars": [
+        "\ue113"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/staff.png",
+      "height": 21,
+      "ascent": 19,
+      "chars": [
+        "\ue114"
+      ]
+    }
+  ]
+}

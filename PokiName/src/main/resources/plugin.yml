@@ -4,14 +4,25 @@ main: kr.devaechu.pokiname.PokiName
 api-version: '1.21'
 author: DevAechu
 softdepend: [Vault, PlaceholderAPI, Essentials]
-description: 포키 서버 한글닉 이름표 / Tab 목록 / 환영 문구 (패킷 미사용)
+description: 포키 서버 한글닉 이름표 / 칭호 / Tab 목록 / 환영 문구 (패킷 미사용)
 commands:
   pnick:
     description: 한글닉 관리
     usage: /pnick <설정|해제|목록|리로드>
     aliases: [한글닉]
     permission: pokiname.admin
+  ptitle:
+    description: 칭호 보기·장착 (관리자는 지급·회수)
+    usage: /ptitle [장착|해제|지급|회수|보기|전체|리로드]
+    aliases: [칭호]
+    permission: pokiname.title
 permissions:
   pokiname.admin:
     description: 한글닉 설정 권한
+    default: op
+  pokiname.title:
+    description: 내 칭호 보기·장착
+    default: true
+  pokiname.title.admin:
+    description: 칭호 지급·회수·리로드
     default: op

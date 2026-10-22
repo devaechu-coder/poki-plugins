@@ -26,6 +26,35 @@ mvn package
 
 영어로는 `/pnick set|remove|list|reload`. 권한: `pokiname.admin` (기본 OP)
 
+## 칭호
+
+머리 위 한글닉 위에 배지 이미지가 뜨고, Tab 목록·채팅 이름 앞에는 색 글씨 칭호가 붙는다.
+배지 이미지는 [PokiTitles-RP](../PokiTitles-RP/) 리소스팩이 있어야 보인다 (없으면 네모 글자로 보임).
+
+| 명령어 | 설명 |
+| --- | --- |
+| `/칭호` | 내 칭호 목록 — 글씨를 누르면 장착 |
+| `/칭호 장착 <id>` / `/칭호 해제` | 칭호 장착 / 빼기 |
+| `/칭호 지급 <마크닉> <id\|전체>` | 칭호 주기 (접속 안 해도 됨, 처음 받은 칭호면 자동 장착) |
+| `/칭호 회수 <마크닉> <id\|전체>` | 칭호 뺏기 |
+| `/칭호 보기 <마크닉>` | 가진 칭호 보기 |
+| `/칭호 전체` | 칭호 id 목록 |
+| `/칭호 리로드` | titles.yml 다시 불러오기 |
+
+영어로는 `/ptitle`. 권한: `pokiname.title` (모두, 보기·장착), `pokiname.title.admin` (OP, 지급·회수·리로드)
+
+- 지급은 콘솔에서도 됨 → 다른 플러그인 보상(후원 보상, 체육관 클리어 등)에서 `칭호 지급 {player} donor` 식으로 연결
+- 칭호 목록: `plugins/PokiName/titles.yml` (id, 이름, 배지 글자 코드, Tab·채팅 글씨, 등급)
+- 가진 칭호: `plugins/PokiName/player-titles.yml`
+- 설정: config.yml 의 `title` (배지 높이 `gap`, 크기 `scale`, 끄기 `overhead`), `tab-name` / `display-name` 의 `{title}`
+- 배지는 이름표와 같은 방식 (텍스트 디스플레이, 패킷 미사용, 본인 화면엔 안 보임)
+
+### 새 칭호 추가
+
+1. 배지 PNG 를 `PokiTitles-RP/assets/poki/textures/font/titles/` 에 넣기 (가로·세로 256px 이하)
+2. `PokiTitles-RP/assets/minecraft/font/default.json` 에 글자 코드(다음 번호, 예: `\ue115`) 추가, `VERSION` 올리기
+3. `titles.yml` 에 같은 `glyph` 로 한 줄 추가 → `/칭호 리로드`
+
 ## 동작 방식
 
 - **머리 위 (`nametag.mode: display`, 기본)**: 스코어보드 팀으로 원래 이름표를 숨기고, 텍스트 디스플레이 엔티티를 매 틱 머리 위로 옮긴다. 본인에게는 `hideEntity` 로 안 보이게 한다.
@@ -50,6 +79,7 @@ PlaceholderAPI 가 있으면 자동 연결. 홀로그램(DecentHolograms)·스�
 | `%pokiname_cobble_<n>%` (+ `_nick` 등) | 코블달러 n등 (`92,415C`) |
 | `%pokiname_biome%` | 지금 바이옴 한글 이름 (`난초 늪`), 없으면 `Orchid Swamp` 식 — `biomes.yml` 에서 수정 |
 | `%pokiname_biome_1%` / `_2%` | 긴 바이옴 이름 두 줄로 (`biome.max-length`) |
+| `%pokiname_title%` / `%pokiname_title_name%` | 장착한 칭호 색 글씨 / 이름만 |
 
 ### 코블달러 순위
 
@@ -66,6 +96,8 @@ Vault(Essentials 돈)로 `interval-seconds`(기본 10초)마다 직접 계산. E
 
 - `plugins/PokiName/config.yml` — 문구·색·이름표 설정
 - `plugins/PokiName/nicknames.yml` — 저장된 한글닉 (UUID 기준)
+- `plugins/PokiName/titles.yml` — 칭호 목록
+- `plugins/PokiName/player-titles.yml` — 플레이어별 가진 칭호 / 장착 칭호
 
 ## 빌드 자동화
 
@@ -73,6 +105,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
+- 1.5.0 — 칭호 (머리 위 배지 + Tab·채팅 색 글씨, `/칭호`, `%pokiname_title%`)
 - 1.4.0 — 바이옴 한글 이름 (`%pokiname_biome%`), 긴 이름 두 줄 나누기
 - 1.3.0 — 코블달러 순위 추가, 순위 공통 코드 정리
 - 1.2.2 — 순위 제외를 한글닉으로도 가능, 켜질 때 순위 설정을 콘솔에 표시

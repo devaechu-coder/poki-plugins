@@ -51,3 +51,40 @@ jobs:
             gh release create "$TAG" "${{ matrix.plugin }}/target/${{ matrix.plugin }}-${{ steps.v.outputs.ver }}.jar" \
               --title "${{ matrix.plugin }} ${{ steps.v.outputs.ver }}" --notes "${{ matrix.plugin }}/README.md 의 버전 기록 참고"
           fi
+
+  # 칭호 배지 리소스팩 — PokiTitles-RP/VERSION 이 새로우면 Releases 에 zip 을 올림
+  resourcepack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 압축
+        id: rp
+        run: |
+          VER=$(tr -d '[:space:]' < PokiTitles-RP/VERSION)
+          cd PokiTitles-RP
+          zip -q -r -X ../PokiTitles-RP.zip pack.mcmeta pack.png assets
+          cd ..
+          SHA1=$(sha1sum PokiTitles-RP.zip | cut -d' ' -f1)
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          echo "sha1=$SHA1" >> "$GITHUB_OUTPUT"
+          echo "tag=PokiTitles-RP-v$VER" >> "$GITHUB_OUTPUT"
+          echo "리소스팩 $VER sha1=$SHA1"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PokiTitles-RP-${{ steps.rp.outputs.ver }}
+          path: PokiTitles-RP.zip
+      - name: 새 버전이면 릴리스
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.rp.outputs.tag }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "$TAG 은 이미 있음 — 건너뜀"
+          else
+            URL="https://github.com/${{ github.repository }}/releases/download/$TAG/PokiTitles-RP.zip"
+            gh release create "$TAG" PokiTitles-RP.zip --title "PokiTitles 리소스팩 ${{ steps.rp.outputs.ver }}" \
+              --notes "server.properties
+          resource-pack=$URL
+          resource-pack-sha1=${{ steps.rp.outputs.sha1 }}"
+          fi

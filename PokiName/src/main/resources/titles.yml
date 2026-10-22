@@ -1,0 +1,109 @@
+# 칭호 목록
+# - id      : 명령어에 쓰는 이름 (/칭호 지급 <마크닉> <id>)
+# - name    : 칭호 이름
+# - glyph   : 리소스팩(PokiTitles)의 배지 글자 코드 — 리소스팩 font/default.json 과 맞아야 함
+# - chat    : Tab 목록·채팅에 붙는 글씨 (배지는 한 줄에 안 들어가서 색 글씨로)
+# - tier    : 등급 (표시용)
+# 새 칭호: 리소스팩에 배지 PNG + 글자 코드 추가 → 여기 한 줄 추가 → /칭호 리로드
+
+titles:
+  beginner:
+    name: '초보 모험가'
+    glyph: 'E101'
+    chat: '&#7BD14F&l[초보 모험가]'
+    tier: '기본'
+  growth:
+    name: '성장의 길'
+    glyph: 'E102'
+    chat: '&#9BE36A&l[성장의 길]'
+    tier: '기본'
+  warrior_path:
+    name: '전사의 길'
+    glyph: 'E103'
+    chat: '&#8FC8FF&l[전사의 길]'
+    tier: '일반'
+  miner:
+    name: '광산의 달인'
+    glyph: 'E104'
+    chat: '&#FFD24A&l[광산의 달인]'
+    tier: '일반'
+  fisher:
+    name: '낚시의 달인'
+    glyph: 'E105'
+    chat: '&#5BC8FF&l[낚시의 달인]'
+    tier: '일반'
+  explorer:
+    name: '탐험가'
+    glyph: 'E106'
+    chat: '&#E8C27A&l[탐험가]'
+    tier: '일반'
+  villager:
+    name: '마을의 방문자'
+    glyph: 'E107'
+    chat: '&#F4A3B8&l[마을의 방문자]'
+    tier: '기본'
+  poki_friend:
+    name: '포키의 친구'
+    glyph: 'E108'
+    chat: '&#7BE08A&l[포키의 친구]'
+    tier: '기본'
+  summer:
+    name: '여름축제 참가자'
+    glyph: 'E109'
+    chat: '&#4FD3FF&l[여름축제 참가자]'
+    tier: '이벤트'
+  halloween:
+    name: '할로윈의 주인공'
+    glyph: 'E10A'
+    chat: '&#FF9A2E&l[할로윈의 주인공]'
+    tier: '이벤트'
+  trainer:
+    name: '포켓몬 트레이너'
+    glyph: 'E10B'
+    chat: '&#FFC93C&l[포켓몬 트레이너]'
+    tier: '희귀'
+  master:
+    name: '포켓몬 마스터'
+    glyph: 'E10C'
+    chat: '&#FFB000&l[포켓몬 마스터]'
+    tier: '희귀'
+  collector:
+    name: '전설의 수집가'
+    glyph: 'E10D'
+    chat: '&#C77DFF&l[전설의 수집가]'
+    tier: '희귀'
+  gym_champion:
+    name: '체육관 챔피언'
+    glyph: 'E10E'
+    chat: '&#6FB6FF&l[체육관 챔피언]'
+    tier: '희귀'
+  christmas:
+    name: '크리스마스 요정'
+    glyph: 'E10F'
+    chat: '&#4CD964&l[크리스마스 요정]'
+    tier: '이벤트'
+  sakura:
+    name: '벚꽃의 여행자'
+    glyph: 'E110'
+    chat: '&#FF8FC7&l[벚꽃의 여행자]'
+    tier: '이벤트'
+  donor:
+    name: '후원자'
+    glyph: 'E111'
+    chat: '&#FF6FB5&l[후원자]'
+    tier: '특별'
+  legend_warrior:
+    name: '전설의 전사'
+    glyph: 'E112'
+    chat: '&#FF4D4D&l[전설의 전사]'
+    tier: '특별'
+  hero:
+    name: '서버의 영웅'
+    glyph: 'E113'
+    chat: '&#FFD700&l[서버의 영웅]'
+    tier: '특별'
+  staff:
+    name: 'Poki 스태프'
+    glyph: 'E114'
+    chat: '&#3FA9F5&l[Poki 스태프]'
+    tier: '특별'

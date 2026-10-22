@@ -16,6 +16,8 @@ import org.bukkit.OfflinePlayer;
  * %pokiname_cobble_<n>% ...        코블달러 순위 (money 와 같은 형식)
  * %pokiname_biome%                지금 있는 바이옴 이름 (한글, 없으면 "Orchid Swamp" 식)
  * %pokiname_biome_1% / _2%        긴 바이옴 이름을 두 줄로 나눈 것 (biome.max-length 글자 기준)
+ * %pokiname_title%               장착한 칭호 색 글씨 (없으면 빈칸)
+ * %pokiname_title_name%          장착한 칭호 이름만 (색 없음)
  */
 final class PokiExpansion extends PlaceholderExpansion {
 
@@ -43,6 +45,12 @@ final class PokiExpansion extends PlaceholderExpansion {
             if (b == null || player == null) return "";
             if (p.equals("biome")) return b.get(player.getUniqueId());
             return b.part(player.getUniqueId(), p.endsWith("1") ? 1 : 2);
+        }
+        if (p.equals("title") || p.equals("title_name")) {
+            if (player == null || plugin.titles() == null) return "";
+            if (p.equals("title_name")) return plugin.titles().nameOf(player.getUniqueId());
+            Titles.Def d = plugin.titles().equipped(player.getUniqueId());
+            return d == null ? "" : d.chat();
         }
         if (p.startsWith("nick_")) {
             return plugin.nickByName(p.substring(5));
