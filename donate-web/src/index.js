@@ -27,7 +27,7 @@ export default {
         case '/chzzk/claim':
           return await claim(request, url, env);
         case '/':
-          return page('포키 인증', '포키 서버 치지직 연동 페이지예요.', '게임 안에서 <b>/후원 연동</b> 을 입력하면 링크가 나와요.');
+          return page('치지직 후원 연동', '포키 서버와 치지직 채널을 연결하는 페이지예요.', '게임 안에서 <kbd>/후원 연동</kbd> 을 입력하면 연동 버튼이 나와요.');
         default:
           return text('Not Found', 404);
       }
@@ -41,7 +41,7 @@ export default {
 function start(url, env) {
   const state = url.searchParams.get('state') || '';
   if (!STATE_RE.test(state)) {
-    return page('링크가 올바르지 않아요', '게임에서 <b>/후원 연동</b> 을 다시 입력해 새 링크를 받아주세요.', '', 400);
+    return page('링크가 올바르지 않아요', '게임에서 <kbd>/후원 연동</kbd> 을 다시 입력해 새 링크를 받아주세요.', '', 400);
   }
   const target = new URL('https://chzzk.naver.com/account-interlock');
   target.searchParams.set('clientId', env.CHZZK_CLIENT_ID);
@@ -54,7 +54,7 @@ async function callback(url, env) {
   const state = url.searchParams.get('state') || '';
   const code = url.searchParams.get('code') || '';
   if (!STATE_RE.test(state) || !code) {
-    return page('연동이 취소됐어요', '권한 허용을 하지 않았거나 링크가 만료됐어요.', '게임에서 <b>/후원 연동</b> 을 다시 입력해 주세요.', 400);
+    return page('연동이 취소됐어요', '권한 허용을 하지 않았거나 링크가 만료됐어요.', '게임에서 <kbd>/후원 연동</kbd> 을 다시 입력해 주세요.', 400);
   }
   await ensureTable(env);
   const now = Date.now();
@@ -62,7 +62,7 @@ async function callback(url, env) {
     env.DB.prepare('DELETE FROM pending WHERE created_at < ?').bind(now - CODE_TTL_MS),
     env.DB.prepare('INSERT OR REPLACE INTO pending (state, code, created_at) VALUES (?, ?, ?)').bind(state, code, now),
   ]);
-  return page('인증 완료!', '이제 게임으로 돌아가면 연동이 끝나요.', '보통 몇 초 안에 게임 채팅에 "연동 완료" 가 떠요. 이 창은 닫아도 돼요.');
+  return page('인증 완료!', '이제 게임으로 돌아가면 연동이 끝나요.', '보통 몇 초 안에 게임 채팅에 <b>연동 완료</b> 가 떠요. 이 창은 닫아도 돼요.', 200, 'ok');
 }
 
 async function claim(request, url, env) {
@@ -111,34 +111,101 @@ function text(body, status) {
   return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } });
 }
 
-function page(title, lead, note, status = 200) {
+const ASSET = 'https://poki-launcher.devaechu.com';
+
+const ICONS = {
+  ok: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  error: '<path d="M7 7l10 10M17 7L7 17"/>',
+  info: '<path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/>',
+};
+
+/** 포키 런처 사이트와 같은 디자인 (어두운 배경 · Pretendard · 하늘색 포인트 · 둥둥 뜨는 로고) */
+function page(title, lead, note, status = 200, kind = status >= 400 ? 'error' : 'info') {
   const html = `<!doctype html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta name="theme-color" content="#0a0e14">
 <title>${title} · POKI</title>
+<link rel="icon" href="${ASSET}/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="${ASSET}/img/icon.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-  :root { --bg:#fff7ef; --card:#ffffff; --ink:#2b2320; --quiet:#7a6a62; --accent:#e4572e; --line:#f0e2d6; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#1b1715; --card:#26201d; --ink:#f4ece6; --quiet:#b5a59b; --accent:#ff7a4d; --line:#3a312c; } }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
-         background:var(--bg); color:var(--ink); font-family:system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
-  main { width:100%; max-width:420px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:32px 24px; text-align:center; }
-  .brand { font-weight:800; letter-spacing:.12em; color:var(--accent); font-size:14px; }
-  h1 { margin:12px 0 8px; font-size:22px; }
-  p { margin:8px 0; line-height:1.6; }
-  .note { color:var(--quiet); font-size:14px; }
+  :root{
+    --bg:#0a0e14; --surface:#111827; --card:#1a2332; --line:rgba(148,163,184,.12);
+    --text:#e2e8f0; --muted:#94a3b8; --faint:#64748b;
+    --cyan:#22d3ee; --blue:#60a5fa; --pink:#ff5fa2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);
+       font-family:Pretendard,system-ui,-apple-system,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .hero{position:relative;flex:1;overflow:hidden;isolation:isolate;padding:24px 0 56px}
+  .hero::before{content:"";position:absolute;inset:0;z-index:-2;background:url(${ASSET}/img/bg.webp) center 30%/cover no-repeat}
+  .hero::after{content:"";position:absolute;inset:0;z-index:-1;
+       background:linear-gradient(180deg,rgba(10,14,20,.25) 0%,rgba(10,14,20,.6) 50%,var(--bg) 100%)}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  nav{display:flex;justify-content:space-between;align-items:center;padding:4px 0 8px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .brand img{width:32px;height:32px;border-radius:8px}
+  .links a{font-size:14px;font-weight:600;text-decoration:none;margin-left:16px;opacity:.9;text-shadow:0 1px 6px rgba(0,0,0,.6)}
+  .links a:hover{opacity:1}
+  .inner{text-align:center;padding-top:8px}
+  .logo{width:min(380px,78vw);height:auto;display:block;margin:0 auto;
+        filter:drop-shadow(0 12px 30px rgba(0,0,0,.45));animation:float 5s ease-in-out infinite}
+  @keyframes float{50%{transform:translateY(-8px)}}
+  @media (prefers-reduced-motion:reduce){.logo{animation:none}}
+  .card{max-width:440px;margin:18px auto 0;background:rgba(17,24,39,.82);border:1px solid var(--line);
+        border-radius:20px;padding:28px 24px 24px;backdrop-filter:blur(10px);box-shadow:0 20px 50px -20px rgba(0,0,0,.7)}
+  .ic{width:56px;height:56px;margin:0 auto 14px;border-radius:16px;display:grid;place-items:center}
+  .ic svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+  .ok .ic{background:rgba(34,211,238,.15);color:var(--cyan);box-shadow:0 0 0 1px rgba(34,211,238,.35)}
+  .error .ic{background:rgba(255,95,162,.14);color:var(--pink);box-shadow:0 0 0 1px rgba(255,95,162,.35)}
+  .info .ic{background:rgba(96,165,250,.15);color:var(--blue);box-shadow:0 0 0 1px rgba(96,165,250,.35)}
+  h1{font-size:24px;letter-spacing:-.02em;margin:0 0 6px}
+  .lead{margin:0;color:var(--text)}
+  .note{margin:10px 0 0;color:var(--muted);font-size:14px}
+  b{color:#fff}
+  kbd{font-family:inherit;font-size:13px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 7px;color:var(--text)}
+  .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:18px}
+  .chip{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px;background:rgba(10,14,20,.6);border:1px solid rgba(255,255,255,.15)}
+  footer{border-top:1px solid var(--line);padding:20px 0 28px;color:var(--faint);font-size:13px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+  footer a{color:var(--muted);text-decoration:none;margin-right:14px}
+  footer a:hover{color:var(--text)}
+  @media (max-width:520px){.links a:not(.keep){display:none}}
 </style>
 </head>
 <body>
-<main>
-  <div class="brand">POKI</div>
-  <h1>${title}</h1>
-  <p>${lead}</p>
-  ${note ? `<p class="note">${note}</p>` : ''}
-</main>
+<header class="hero">
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="/"><img src="${ASSET}/img/icon.png" alt="">포키 연동</a>
+      <div class="links">
+        <a href="${ASSET}">런처</a>
+        <a class="keep" href="https://poki.devaechu.com">위키</a>
+      </div>
+    </nav>
+    <div class="inner">
+      <img class="logo" src="${ASSET}/img/logo.webp" width="1200" height="798" alt="POKI">
+      <div class="card ${kind}">
+        <div class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS[kind] || ICONS.info}</svg></div>
+        <h1>${title}</h1>
+        <p class="lead">${lead}</p>
+        ${note ? `<p class="note">${note}</p>` : ''}
+        ${kind === 'info' ? '<div class="chips"><span class="chip">치지직 후원 연동</span><span class="chip">입주민 · 운영진 전용</span></div>' : ''}
+      </div>
+    </div>
+  </div>
+</header>
+<footer>
+  <div class="wrap">
+    <span>POKI · 코블몬 서버</span>
+    <span><a href="https://poki.devaechu.com">위키</a><a href="${ASSET}">런처</a></span>
+  </div>
+</footer>
 </body>
 </html>`;
   return new Response(html, {
