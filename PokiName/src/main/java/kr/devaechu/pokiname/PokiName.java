@@ -211,7 +211,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     /**
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
-     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기, 1등 NPC 이름 바꾸기 명령어 추가 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
+     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기, 1등 NPC 이름 바꾸기 명령어 추가, rank-exclude 자리 만들기 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
      */
     /** config.yml 문법 오류 확인. 오류면 그 내용, 괜찮으면 null (오류가 있으면 마크가 config 를 통째로 무시하고 기본값을 씀) */
     String configError() {
@@ -259,6 +259,14 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             next.add(first.get(0));
             c.set("money-rank.on-first-change", next);
             getLogger().info("config.yml: 소지금 1등 NPC 이름도 바꾸게 명령어 추가 → " + next);
+        }
+        // v2: 순위 공통 제외 목록 자리 만들기
+        if (!c.contains("rank-exclude", true)) {
+            c.set("rank-exclude", new ArrayList<String>());
+            c.setComments("rank-exclude", List.of(
+                    "모든 순위(소지금·코블달러)에서 뺄 사람 — 마크닉 추천(한글닉도 됨). 예: [Dev_Aechu, 서버총괄]",
+                    "각 순위의 exclude 와 합쳐짐. 바꾼 뒤 /한글닉 리로드 → 콘솔 \"순위 켜짐 … 제외: [...]\" 로 확인"));
+            getLogger().info("config.yml: 순위 공통 제외 목록(rank-exclude) 추가");
         }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();
