@@ -13,6 +13,7 @@ import org.bukkit.OfflinePlayer;
  * %pokiname_money_<n>_name%       n등 마크닉
  * %pokiname_money_<n>_value%      n등 금액 ($7,199)
  * %pokiname_money_<n>_raw%        n등 금액 숫자 그대로
+ * %pokiname_cobble_<n>% ...        코블달러 순위 (money 와 같은 형식)
  */
 final class PokiExpansion extends PlaceholderExpansion {
 
@@ -38,14 +39,17 @@ final class PokiExpansion extends PlaceholderExpansion {
         if (p.startsWith("nick_")) {
             return plugin.nickByName(p.substring(5));
         }
-        if (p.startsWith("money_")) {
-            MoneyRank rank = plugin.moneyRank();
+        Rank rank = null;
+        String rest = null;
+        if (p.startsWith("money_")) { rank = plugin.moneyRank(); rest = p.substring(6); }
+        else if (p.startsWith("cobble_")) { rank = plugin.cobbleRank(); rest = p.substring(7); }
+        if (rest != null) {
             if (rank == null) return "";
-            String[] parts = p.substring(6).split("_", 2);
+            String[] parts = rest.split("_", 2);
             int n;
             try { n = Integer.parseInt(parts[0]); } catch (NumberFormatException ex) { return null; }
             if (parts.length == 1) return PokiName.color(rank.line(n));
-            MoneyRank.Entry e = rank.get(n);
+            Rank.Entry e = rank.get(n);
             if (e == null) return "";
             return switch (parts[1]) {
                 case "nick" -> plugin.nickOf(e.id(), e.name());

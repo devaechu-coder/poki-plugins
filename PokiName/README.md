@@ -47,6 +47,12 @@ PlaceholderAPI 가 있으면 자동 연결. 홀로그램(DecentHolograms)·스�
 | `%pokiname_nick_<마크닉>%` | 마크닉으로 한글닉 찾기 — 접속 안 해도 됨 |
 | `%pokiname_money_<n>%` | 소지금 n등 한 줄 (`money-rank.line` 형식) |
 | `%pokiname_money_<n>_nick%` / `_name` / `_value` / `_raw` | n등 한글닉 / 마크닉 / `$7,199` / 숫자 |
+| `%pokiname_cobble_<n>%` (+ `_nick` 등) | 코블달러 n등 (`92,415C`) |
+
+### 코블달러 순위
+
+CobbleDollars 모드가 `<월드>/cobbledollarsplayerdata/<uuid>.json` 에 저장한 값 + 접속 중인 사람은 모드에서 실시간 값(리플렉션).
+파일은 바뀐 것만 다시 읽음. 설정은 `cobble-rank`. 겜블 모드 순위판(`/gpleaderboard`) 대신 씀.
 
 ### 소지금 순위
 
@@ -65,6 +71,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
+- 1.3.0 — 코블달러 순위 추가, 순위 공통 코드 정리
 - 1.2.2 — 순위 제외를 한글닉으로도 가능, 켜질 때 순위 설정을 콘솔에 표시
 - 1.2.1 — 1등이 바뀌면 명령어 실행 (`on-first-change`, 1등 NPC 스킨 자동 변경)
 - 1.2.0 — PlaceholderAPI 연결(한글닉 조회), 소지금 순위 실시간 계산
