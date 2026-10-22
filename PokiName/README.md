@@ -95,7 +95,7 @@ CobbleDollars 모드가 `<월드>/cobbledollarsplayerdata/<uuid>.json` 에 저�
 
 Vault(Essentials 돈)로 `interval-seconds`(기본 10초)마다 직접 계산. Essentials `baltop` 은 누가 `/baltop` 을 쳐야 갱신돼서 대신 만듦.
 돈 1 미만은 빼고, 금액은 `$7,199` 처럼 쉼표·소수점 버림. 설정은 config.yml 의 `money-rank`.
-1등이 바뀌면 `on-first-change` 명령어를 콘솔로 실행 (기본: Citizens 7번 NPC 스킨을 1등 스킨으로).
+1등이 바뀌면 `on-first-change` 명령어를 콘솔로 실행 (기본: Citizens 7번 NPC 이름을 1등 한글닉으로, 스킨을 1등 스킨으로). 실행할 때 콘솔에 1등 이름이 찍히고, 명령어가 안 먹히면 경고가 뜬다. `/한글닉 리로드` 하면 다시 한 번 적용.
 
 ## 파일
 
@@ -110,7 +110,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
-- 1.6.1 — 옛 config 의 Tab·채팅 이름에 칭호 자리(`{title}`) 자동 추가, 칭호 글씨 굵게 뺌, 칭호 서버 최초 공지(`/칭호 최초`, `/칭호 최초초기화`), `/한글닉 바이옴` 확인 명령어, 한글 이름 없는 바이옴은 콘솔에 알림
+- 1.6.1 — 옛 config 의 Tab·채팅 이름에 칭호 자리(`{title}`) 자동 추가, 칭호 글씨 굵게 뺌, 칭호 서버 최초 공지(`/칭호 최초`, `/칭호 최초초기화`), `/한글닉 바이옴` 확인 명령어, 1등 NPC 이름도 한글닉으로(옛 config 자동 추가) + 명령어 실패 경고, 한글 이름 없는 바이옴은 콘솔에 알림
 - 1.6.0 — 칭호 20개 새 디자인으로 교체, 칭호를 한글 이름으로 (옛 영어 id 는 자동 변환, 옛 titles.yml 은 titles.yml.old 로 백업)
 - 1.5.0 — 칭호 (머리 위 배지 + Tab·채팅 색 글씨, `/칭호`, `%pokiname_title%`)
 - 1.4.0 — 바이옴 한글 이름 (`%pokiname_biome%`), 긴 이름 두 줄 나누기

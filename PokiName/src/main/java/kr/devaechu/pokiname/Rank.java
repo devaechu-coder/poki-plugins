@@ -91,13 +91,17 @@ abstract class Rank {
         Entry first = get(1);
         if (first == null || first.id().equals(lastFirst)) return;
         lastFirst = first.id();
-        for (String cmd : section().getStringList("on-first-change")) {
+        List<String> cmds = section().getStringList("on-first-change");
+        if (!cmds.isEmpty())
+            plugin.getLogger().info(label + " 1등: " + plugin.nickOf(first.id(), first.name()) + " (" + first.name() + ") → 명령어 " + cmds.size() + "개 실행");
+        for (String cmd : cmds) {
             String c = cmd.replace("{name}", first.name())
                     .replace("{nick}", plugin.nickOf(first.id(), first.name()))
                     .replace("{value}", formatValue(first.value()));
             if (c.startsWith("/")) c = c.substring(1);
             try {
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c);
+                if (!Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c))
+                    plugin.getLogger().warning("1등 변경 명령어가 안 먹힘 (없는 명령어거나 형식이 틀림): " + c);
             } catch (RuntimeException ex) {
                 plugin.getLogger().warning("1등 변경 명령어 실패 (" + c + "): " + ex.getMessage());
             }

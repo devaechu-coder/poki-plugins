@@ -89,7 +89,9 @@ money-rank:
   empty-line: '&7{rank}등 : -'
   # 1등이 바뀔 때 콘솔에서 실행할 명령어 ({name} 마크닉, {nick} 한글닉, {value} 금액)
   # 서버 켤 때·리로드할 때도 한 번 실행됨
+  # Citizens 7번 NPC: 이름을 1등 한글닉으로, 스킨을 1등 스킨으로 (이름 먼저 바꾸고 스킨)
   on-first-change:
+    - 'npc rename --id 7 {nick}'
     - 'npc skin --id 7 {name}'
 
 # 코블달러 순위 (CobbleDollars 모드). 홀로그램에 %pokiname_cobble_1% ~ %pokiname_cobble_9% 로 사용

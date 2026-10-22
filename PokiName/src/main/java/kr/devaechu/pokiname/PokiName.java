@@ -210,7 +210,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     /**
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
-     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
+     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기, 1등 NPC 이름 바꾸기 명령어 추가 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
      */
     private void upgradeConfig() {
         FileConfiguration c = getConfig();
@@ -222,6 +222,16 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 c.set(key, "{title}" + v);
                 getLogger().info("config.yml: " + key + " 앞에 칭호 자리({title})를 넣음 → " + c.getString(key));
             }
+        }
+        // v2: 1등 NPC — 스킨만 바꾸던 기본 명령어에 이름 바꾸기 추가
+        List<String> first = c.getStringList("money-rank.on-first-change");
+        if (first.size() == 1 && first.get(0).trim().startsWith("npc skin --id ")) {
+            String id = first.get(0).trim().substring("npc skin --id ".length()).split(" ")[0];
+            List<String> next = new ArrayList<>();
+            next.add("npc rename --id " + id + " {nick}");
+            next.add(first.get(0));
+            c.set("money-rank.on-first-change", next);
+            getLogger().info("config.yml: 소지금 1등 NPC 이름도 바꾸게 명령어 추가 → " + next);
         }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();
