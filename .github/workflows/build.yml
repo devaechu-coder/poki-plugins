@@ -1,9 +1,11 @@
 name: 빌드
 
 # main 에 올리면 플러그인을 빌드해서, 새 버전이면 Releases 에 jar 를 올림
+# PR 에서는 빌드만 해서 깨지는지 미리 확인 (릴리스 안 함)
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -38,6 +40,7 @@ jobs:
           name: ${{ matrix.plugin }}-${{ steps.v.outputs.ver }}
           path: ${{ matrix.plugin }}/target/${{ matrix.plugin }}-${{ steps.v.outputs.ver }}.jar
       - name: 새 버전이면 릴리스
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.v.outputs.tag }}
