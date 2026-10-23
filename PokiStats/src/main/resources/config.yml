@@ -1,0 +1,27 @@
+# PokiStats — 운영 통계
+# 서버는 통계 서버로 "보내기만" 함 (밖에서 서버로 들어오는 연결 없음 → 집 IP 공개 안 됨)
+
+# 통계 서버 받는 주소 (Cloudflare Worker). 비워두면 기록만 쌓아두고 안 보냄 → 주소 넣으면 쌓인 것부터 보냄
+endpoint: ""
+
+# 통계 서버와 같은 비밀 키 (Worker 의 INGEST_SECRET). 남한테 보여주지 말 것 — 체크리스트·디스코드에 붙이지 말기
+secret: ""
+
+# 이 서버 이름 (나중에 서버가 여러 개여도 구분되게)
+server-id: poki
+
+# 몇 분마다 동접자 수를 기록하고 보낼지
+interval-minutes: 5
+
+# 후원 통계 — PokiDonate 장부(donate.db)를 읽기만 함. 지급이 끝난 줄(지급됨/실패/대상 아님/수동)만 보냄
+donate:
+  enabled: true
+  db: plugins/PokiDonate/donate.db
+  # /후원 테스트 로 만든 줄도 보낼지 (통계 서버에서 test 로 구분됨)
+  include-test: false
+
+# 못 보낸 기록을 최대 몇 개까지 쌓아둘지 (넘으면 오래된 것부터 버림)
+max-queue: 50000
+
+# 보낼 때마다 콘솔에 한 줄 남기기
+debug: false
