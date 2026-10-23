@@ -8,8 +8,8 @@
 #   description : 옷장에 보일 설명 (여러 줄 가능)
 #   unlock      : 잠겨 있을 때 보일 얻는 방법
 # 모자
-#   material    : 머리에 씌울 아이템 (모델이 생기기 전엔 바닐라 아이템으로 임시)
-#   model       : 리소스팩 custom_model_data 번호 (0 = 안 씀). 모자는 1101~1199 사용
+#   material    : 머리에 씌울 아이템 — 리소스팩 모자는 PAPER (모델 없는 바닐라 아이템도 됨)
+#   model       : 리소스팩 custom_model_data 번호 (0 = 안 씀). 모자는 1101~1199 — PokiWardrobe-RP 의 paper.json 과 맞아야 함
 #                 (1001 은 포키 롤리팝, 칭호 배지는 글자 ~ 이라 겹치지 않음)
 # 파티클
 #   icon        : 옷장에 보일 아이콘 아이템
@@ -18,35 +18,42 @@
 #   count       : 한 번에 몇 개
 
 cosmetics:
-  # ── 모자 (임시 바닐라 아이템 — 블록벤치 모델 나오면 material 을 PAPER 등으로, model 을 1101~ 로) ──
-  꽃_모자:
-    name: '&d꽃 모자'
-    category: 모자
-    material: PINK_TULIP
-    model: 0
-    description: ['&7머리에 꽃 한 송이']
-    unlock: '이벤트 보상'
-  버섯_모자:
-    name: '&c버섯 모자'
-    category: 모자
-    material: RED_MUSHROOM
-    model: 0
-    description: ['&7포자 냄새가 나요']
-    unlock: '이벤트 보상'
-  케이크_모자:
-    name: '&f케이크 모자'
-    category: 모자
-    material: CAKE
-    model: 0
-    description: ['&7생일 축하해요!']
-    unlock: '이벤트 보상'
+  # ── 모자 (PokiWardrobe-RP 리소스팩 모델, 종이 아이템 + custom_model_data 1101~) ──
   왕관:
     name: '&6왕관'
     category: 모자
-    material: GOLDEN_HELMET
-    model: 0
-    description: ['&7방어력은 없어요']
+    material: PAPER
+    model: 1101
+    description: ['&7보석 박힌 금 왕관']
     unlock: '운영진 지급'
+  몬스터볼_캡모자:
+    name: '&c몬스터볼 캡모자'
+    category: 모자
+    material: PAPER
+    model: 1102
+    description: ['&7트레이너의 기본 모자']
+    unlock: '이벤트 보상'
+  리본_머리띠:
+    name: '&d리본 머리띠'
+    category: 모자
+    material: PAPER
+    model: 1103
+    description: ['&7커다란 핑크 리본']
+    unlock: '이벤트 보상'
+  고양이_귀_머리띠:
+    name: '&f고양이 귀 머리띠'
+    category: 모자
+    material: PAPER
+    model: 1104
+    description: ['&7냥']
+    unlock: '이벤트 보상'
+  꽃_화관:
+    name: '&a꽃 화관'
+    category: 모자
+    material: PAPER
+    model: 1105
+    description: ['&7분홍·하얀 꽃을 엮은 화관']
+    unlock: '이벤트 보상'
 
   # ── 파티클 ──
   하트:
