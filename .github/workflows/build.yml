@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        plugin: [PokiName, PokiLinks, PokiDonate, PokiWardrobe]
+        plugin: [PokiName, PokiLinks, PokiDonate]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -52,13 +52,13 @@ jobs:
               --title "${{ matrix.plugin }} ${{ steps.v.outputs.ver }}" --notes "${{ matrix.plugin }}/README.md 의 버전 기록 참고"
           fi
 
-  # 리소스팩 (칭호 배지, 치장 모자) — 폴더의 VERSION 이 새로우면 Releases 에 zip 을 올림
+  # 리소스팩 (칭호 배지) — 폴더의 VERSION 이 새로우면 Releases 에 zip 을 올림
   resourcepack:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        pack: [PokiTitles-RP, PokiWardrobe-RP]
+        pack: [PokiTitles-RP]
     steps:
       - uses: actions/checkout@v4
       - name: 압축
