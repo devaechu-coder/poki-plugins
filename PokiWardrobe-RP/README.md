@@ -22,7 +22,7 @@ PokiWardrobe 치장 모자 리소스팩. 마크 1.21.1 (pack_format 34). 미리�
 - `paper.json` 의 overrides 에 다음 번호(1106~) 추가, `VERSION` 올리기
 - PokiWardrobe 의 cosmetics.yml 에 `material: PAPER`, `model: <번호>` 로 추가 → `/치장관리 리로드`
 
-지금 5개는 `tools/build_hats.py` 로 만든 것 (상자 좌표 + 한 장짜리 색 팔레트 텍스처). 머리 칸에 씌우면 마크가 0.625 배로 줄여서 머리 가운데에 맞추니까,
+지금 5개는 `tools/build_hats.py`(상자 좌표) + `tools/build_hats_textured.py`(면마다 도트 텍스처: 하이라이트·그림자·체크무늬·털·잎) 로 만든 것. 모자마다 텍스처 한 장. 머리 칸에 씌우면 마크가 0.625 배로 줄여서 머리 가운데에 맞추니까,
 모델 좌표로 머리는 1.6~14.4, 머리 꼭대기 y=14.4, 얼굴 쪽이 north(z 작은 쪽).
 
 ## 배포
