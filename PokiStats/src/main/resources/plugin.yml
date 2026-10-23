@@ -1,0 +1,17 @@
+name: PokiStats
+version: ${project.version}
+main: kr.devaechu.pokistats.PokiStats
+api-version: '1.21'
+author: DevAechu
+description: 포키 운영 통계 — 동접·접속 기록·후원 통계를 통계 서버로 보냄
+softdepend: [PokiDonate]
+commands:
+  pokistats:
+    description: 통계 전송 상태 / 바로 보내기 / 리로드
+    usage: /통계 [상태|보내기|리로드]
+    aliases: [통계]
+    permission: poki.stats.admin
+permissions:
+  poki.stats.admin:
+    description: /통계 명령어
+    default: op
