@@ -1,0 +1,100 @@
+# 치장 목록 — 맨 앞 이름(id)이 명령어에 쓰는 이름 (띄어쓰기 대신 _)
+#   /치장관리 지급 <마크닉> 꽃_모자
+# 바꾼 뒤 /치장관리 리로드
+#
+# 공통
+#   name        : 보여줄 이름 (&색 코드, &#RRGGBB 가능)
+#   category    : 모자 / 파티클
+#   description : 옷장에 보일 설명 (여러 줄 가능)
+#   unlock      : 잠겨 있을 때 보일 얻는 방법
+# 모자
+#   material    : 머리에 씌울 아이템 (모델이 생기기 전엔 바닐라 아이템으로 임시)
+#   model       : 리소스팩 custom_model_data 번호 (0 = 안 씀). 모자는 1101~1199 사용
+#                 (1001 은 포키 롤리팝, 칭호 배지는 글자 ~ 이라 겹치지 않음)
+# 파티클
+#   icon        : 옷장에 보일 아이콘 아이템
+#   particle    : 마크 파티클 이름 (HEART, END_ROD, CHERRY_LEAVES, NOTE, FLAME, DUST ...)
+#   color       : DUST 일 때 색 (#RRGGBB)
+#   count       : 한 번에 몇 개
+
+cosmetics:
+  # ── 모자 (임시 바닐라 아이템 — 블록벤치 모델 나오면 material 을 PAPER 등으로, model 을 1101~ 로) ──
+  꽃_모자:
+    name: '&d꽃 모자'
+    category: 모자
+    material: PINK_TULIP
+    model: 0
+    description: ['&7머리에 꽃 한 송이']
+    unlock: '이벤트 보상'
+  버섯_모자:
+    name: '&c버섯 모자'
+    category: 모자
+    material: RED_MUSHROOM
+    model: 0
+    description: ['&7포자 냄새가 나요']
+    unlock: '이벤트 보상'
+  케이크_모자:
+    name: '&f케이크 모자'
+    category: 모자
+    material: CAKE
+    model: 0
+    description: ['&7생일 축하해요!']
+    unlock: '이벤트 보상'
+  왕관:
+    name: '&6왕관'
+    category: 모자
+    material: GOLDEN_HELMET
+    model: 0
+    description: ['&7방어력은 없어요']
+    unlock: '운영진 지급'
+
+  # ── 파티클 ──
+  하트:
+    name: '&c하트'
+    category: 파티클
+    icon: RED_DYE
+    particle: HEART
+    count: 1
+    description: ['&7발밑에 하트가 퐁퐁']
+    unlock: '이벤트 보상'
+  반짝이:
+    name: '&e반짝이'
+    category: 파티클
+    icon: GLOWSTONE_DUST
+    particle: END_ROD
+    count: 2
+    description: ['&7반짝반짝 별가루']
+    unlock: '이벤트 보상'
+  꽃잎:
+    name: '&d벚꽃잎'
+    category: 파티클
+    icon: CHERRY_LEAVES
+    particle: CHERRY_LEAVES
+    count: 3
+    description: ['&7걸을 때마다 꽃잎이 흩날려요']
+    unlock: '이벤트 보상'
+  음표:
+    name: '&b음표'
+    category: 파티클
+    icon: NOTE_BLOCK
+    particle: NOTE
+    count: 1
+    description: ['&7흥얼흥얼']
+    unlock: '이벤트 보상'
+  불꽃:
+    name: '&6불꽃'
+    category: 파티클
+    icon: BLAZE_POWDER
+    particle: FLAME
+    count: 2
+    description: ['&7뜨거운 발걸음']
+    unlock: '이벤트 보상'
+  포키_핑크:
+    name: '&#FF8FC7포키 핑크'
+    category: 파티클
+    icon: PINK_DYE
+    particle: DUST
+    color: '#FF8FC7'
+    count: 4
+    description: ['&7포키 색 반짝이']
+    unlock: '운영진 지급'
