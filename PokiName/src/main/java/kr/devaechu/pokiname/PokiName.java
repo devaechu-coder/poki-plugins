@@ -71,6 +71,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        warnConfigError(null);
+        upgradeConfig();
         dataFile = new File(getDataFolder(), "nicknames.yml");
         loadNicks();
         titles = new Titles(this);
@@ -202,6 +204,72 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     /** 칭호가 바뀌었을 때 등 — 이름표·Tab·채팅 이름 다시 적용 */
     void refresh(Player p) {
         apply(p);
+    }
+
+    /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
+    private static final int CONFIG_VERSION = 2;
+
+    /**
+     * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
+     * v2: Tab·채팅 이름에 칭호 자리({title}) 넣기, 1등 NPC 이름 바꾸기 명령어 추가, rank-exclude 자리 만들기 — 한 번만 하고, 그 뒤에 지우면 다시 안 넣음.
+     */
+    /** config.yml 문법 오류 확인. 오류면 그 내용, 괜찮으면 null (오류가 있으면 마크가 config 를 통째로 무시하고 기본값을 씀) */
+    String configError() {
+        File f = new File(getDataFolder(), "config.yml");
+        if (!f.exists()) return null;
+        try {
+            new YamlConfiguration().load(f);
+            return null;
+        } catch (Exception ex) {
+            return ex.getMessage();
+        }
+    }
+
+    private void warnConfigError(CommandSender s) {
+        String err = configError();
+        if (err == null) return;
+        getLogger().severe("config.yml 에 문법 오류가 있어서 설정 전체가 무시되고 기본값으로 돌아가는 중! (순위 제외·문구 등 다 안 먹음)");
+        getLogger().severe(err);
+        if (s != null && !(s instanceof org.bukkit.command.ConsoleCommandSender))
+            s.sendMessage(color("&c&lconfig.yml 문법 오류! &c설정이 다 무시되고 있어요. 콘솔에 몇째 줄인지 나와요."));
+    }
+
+    private void upgradeConfig() {
+        if (configError() != null) {
+            // 문법 오류로 비어 있는 설정을 저장하면 파일이 날아가니까 절대 저장 안 함
+            getLogger().warning("config.yml 문법 오류 때문에 자동 고치기를 건너뜀 — 오류를 고친 뒤 다시 켜주세요");
+            return;
+        }
+        FileConfiguration c = getConfig();
+        int ver = c.contains("config-version", true) ? c.getInt("config-version", 1) : 1;
+        if (ver >= CONFIG_VERSION) return;
+        for (String key : new String[]{"tab-name", "display-name"}) {
+            String v = c.getString(key);
+            if (v != null && !v.contains("{title}")) {
+                c.set(key, "{title}" + v);
+                getLogger().info("config.yml: " + key + " 앞에 칭호 자리({title})를 넣음 → " + c.getString(key));
+            }
+        }
+        // v2: 1등 NPC — 스킨만 바꾸던 기본 명령어에 이름 바꾸기 추가
+        List<String> first = c.getStringList("money-rank.on-first-change");
+        if (first.size() == 1 && first.get(0).trim().startsWith("npc skin --id ")) {
+            String id = first.get(0).trim().substring("npc skin --id ".length()).split(" ")[0];
+            List<String> next = new ArrayList<>();
+            next.add("npc rename --id " + id + " {nick}");
+            next.add(first.get(0));
+            c.set("money-rank.on-first-change", next);
+            getLogger().info("config.yml: 소지금 1등 NPC 이름도 바꾸게 명령어 추가 → " + next);
+        }
+        // v2: 순위 공통 제외 목록 자리 만들기
+        if (!c.contains("rank-exclude", true)) {
+            c.set("rank-exclude", new ArrayList<String>());
+            c.setComments("rank-exclude", List.of(
+                    "모든 순위(소지금·코블달러)에서 뺄 사람 — 마크닉 추천(한글닉도 됨). 예: [Dev_Aechu, 서버총괄]",
+                    "각 순위의 exclude 와 합쳐짐. 바꾼 뒤 /한글닉 리로드 → 콘솔 \"순위 켜짐 … 제외: [...]\" 로 확인"));
+            getLogger().info("config.yml: 순위 공통 제외 목록(rank-exclude) 추가");
+        }
+        c.set("config-version", CONFIG_VERSION);
+        saveConfig();
     }
 
     private boolean displayMode() {
@@ -373,8 +441,15 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 s.sendMessage(color("&e한글닉 목록 (" + nicks.size() + "명)"));
                 for (String[] v : nicks.values()) s.sendMessage(color("&7- &f" + v[0] + " &7→ &e" + v[1]));
             }
+            case "바이옴", "biome" -> {
+                if (!(s instanceof Player p)) { s.sendMessage(color("&c게임 안에서 써주세요.")); return true; }
+                if (biomeName == null) { s.sendMessage(color("&c바이옴 기능이 꺼져 있어요.")); return true; }
+                s.sendMessage(color("&e지금 바이옴"));
+                for (String line : biomeName.debug(p)) s.sendMessage(color("&7- &f" + line));
+            }
             case "리로드", "reload" -> {
                 reloadConfig();
+                warnConfigError(s);
                 loadNicks();
                 titles.load();
                 titles.removeAll();
@@ -394,6 +469,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         s.sendMessage(color("&e/" + label + " 설정 <마크닉> <한글닉> &7- 한글닉 지정"));
         s.sendMessage(color("&e/" + label + " 해제 <마크닉> &7- 한글닉 지우기"));
         s.sendMessage(color("&e/" + label + " 목록 &7- 등록된 한글닉 보기"));
+        s.sendMessage(color("&e/" + label + " 바이옴 &7- 지금 바이옴이 어떻게 읽히는지 (한글 이름 확인용)"));
         s.sendMessage(color("&e/" + label + " 리로드 &7- config.yml 다시 불러오기"));
     }
 
@@ -402,7 +478,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         List<String> out = new ArrayList<>();
         if (!s.hasPermission("pokiname.admin")) return out;
         if (a.length == 1) {
-            for (String o : new String[]{"설정", "해제", "목록", "리로드"}) if (o.startsWith(a[0])) out.add(o);
+            for (String o : new String[]{"설정", "해제", "목록", "바이옴", "리로드"}) if (o.startsWith(a[0])) out.add(o);
         } else if (a.length == 2) {
             String sub = a[0].toLowerCase(Locale.ROOT);
             if (sub.equals("설정") || sub.equals("set")) {
@@ -489,6 +565,12 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     private static String teamName(UUID id) {
         return TEAM_PREFIX + id.toString().replace("-", "").substring(0, 13);
+    }
+
+    /** 색 코드(&a, &#RRGGBB, §a) 빼기 */
+    static String stripColor(String s) {
+        if (s == null) return "";
+        return ChatColor.stripColor(color(s));
     }
 
     /** &a 같은 색 코드와 &#RRGGBB 헥스 색을 마크 색 코드로 바꾼다. */

@@ -52,39 +52,43 @@ jobs:
               --title "${{ matrix.plugin }} ${{ steps.v.outputs.ver }}" --notes "${{ matrix.plugin }}/README.md 의 버전 기록 참고"
           fi
 
-  # 칭호 배지 리소스팩 — PokiTitles-RP/VERSION 이 새로우면 Releases 에 zip 을 올림
+  # 리소스팩 (칭호 배지) — 폴더의 VERSION 이 새로우면 Releases 에 zip 을 올림
   resourcepack:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pack: [PokiTitles-RP]
     steps:
       - uses: actions/checkout@v4
       - name: 압축
         id: rp
+        env:
+          PACK: ${{ matrix.pack }}
         run: |
-          VER=$(tr -d '[:space:]' < PokiTitles-RP/VERSION)
-          cd PokiTitles-RP
-          zip -q -r -X ../PokiTitles-RP.zip pack.mcmeta pack.png assets
+          VER=$(tr -d '[:space:]' < "$PACK/VERSION")
+          cd "$PACK"
+          zip -q -r -X "../$PACK.zip" pack.mcmeta pack.png assets
           cd ..
-          SHA1=$(sha1sum PokiTitles-RP.zip | cut -d' ' -f1)
+          SHA1=$(sha1sum "$PACK.zip" | cut -d' ' -f1)
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
           echo "sha1=$SHA1" >> "$GITHUB_OUTPUT"
-          echo "tag=PokiTitles-RP-v$VER" >> "$GITHUB_OUTPUT"
-          echo "리소스팩 $VER sha1=$SHA1"
+          echo "tag=$PACK-v$VER" >> "$GITHUB_OUTPUT"
+          echo "$PACK $VER sha1=$SHA1"
       - uses: actions/upload-artifact@v4
         with:
-          name: PokiTitles-RP-${{ steps.rp.outputs.ver }}
-          path: PokiTitles-RP.zip
+          name: ${{ matrix.pack }}-${{ steps.rp.outputs.ver }}
+          path: ${{ matrix.pack }}.zip
       - name: 새 버전이면 릴리스
         if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.rp.outputs.tag }}
+          PACK: ${{ matrix.pack }}
         run: |
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "$TAG 은 이미 있음 — 건너뜀"
           else
-            URL="https://github.com/${{ github.repository }}/releases/download/$TAG/PokiTitles-RP.zip"
-            gh release create "$TAG" PokiTitles-RP.zip --title "PokiTitles 리소스팩 ${{ steps.rp.outputs.ver }}" \
-              --notes "server.properties
-          resource-pack=$URL
-          resource-pack-sha1=${{ steps.rp.outputs.sha1 }}"
+            gh release create "$TAG" "$PACK.zip" --title "$PACK ${{ steps.rp.outputs.ver }}" \
+              --notes "resourcepacks-poki.zip 안에 넣어서 R2 에 올리기 (sha1 ${{ steps.rp.outputs.sha1 }})"
           fi

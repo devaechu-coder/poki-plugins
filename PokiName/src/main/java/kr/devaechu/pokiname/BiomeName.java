@@ -13,6 +13,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -29,6 +31,8 @@ final class BiomeName {
     private final Map<String, String> names = new HashMap<>();
     private final Map<UUID, String> current = new ConcurrentHashMap<>();
     private BukkitTask task;
+    /** 한글 이름이 없어서 콘솔에 이미 알린 바이옴 */
+    private final Set<String> reported = new HashSet<>();
 
     BiomeName(PokiName plugin) {
         this.plugin = plugin;
@@ -102,8 +106,24 @@ final class BiomeName {
         for (String c : candidates) {
             if (c != null && names.containsKey(c)) return names.get(c);
         }
+        String raw = (ns == null ? "?" : ns) + ":" + (path == null ? "?" : path) + " / " + enumName;
+        if (reported.add(raw))
+            plugin.getLogger().info("바이옴 한글 이름 없음 → biomes.yml 에 추가하면 됨: " + raw);
         String base = path != null && !"minecraft".equals(ns) ? path : stripModPrefix(enumName);
         return pretty(base != null ? base : String.valueOf(enumName));
+    }
+
+    /** /한글닉 바이옴 — 지금 서 있는 바이옴이 어떻게 읽히는지 */
+    String[] debug(Player p) {
+        Biome b = p.getLocation().getBlock().getBiome();
+        String key;
+        try { key = String.valueOf(b.getKey()); } catch (Throwable t) { key = "(못 읽음: " + t.getClass().getSimpleName() + ")"; }
+        return new String[]{
+            "바이옴 이름(enum): " + b.name(),
+            "바이옴 키: " + key,
+            "보여줄 이름: " + resolve(b),
+            "지금 %pokiname_biome% 값: " + get(p.getUniqueId()),
+        };
     }
 
     /** terralith_orchid_swamp → orchid_swamp (모드 이름이 앞에 붙은 경우) */

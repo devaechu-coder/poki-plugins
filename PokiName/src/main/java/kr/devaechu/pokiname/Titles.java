@@ -8,6 +8,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -35,6 +36,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * 칭호.
@@ -50,7 +53,10 @@ final class Titles implements CommandExecutor, TabCompleter {
     /** 기본 titles.yml 의 version — 기본 칭호 목록을 바꿀 때 올림 (서버의 옛 titles.yml 을 새 것으로 교체) */
     static final int DEFS_VERSION = 2;
 
-    record Def(String id, String name, String glyph, String chat, String tier) { }
+    record Def(String id, String name, String glyph, String chat, String tier, boolean announceFirst) { }
+
+    /** 서버 최초 획득 기록 */
+    record First(UUID uuid, String name, String at) { }
 
     private static final class Owned {
         String name;
@@ -65,6 +71,9 @@ final class Titles implements CommandExecutor, TabCompleter {
     private final Map<UUID, String> shownGlyph = new HashMap<>();
     private File defsFile;
     private File dataFile;
+    private File firstFile;
+    /** 칭호 id → 서버에서 처음 받은 사람 */
+    private final Map<String, First> firsts = new LinkedHashMap<>();
 
     Titles(PokiName plugin) {
         this.plugin = plugin;
@@ -84,6 +93,8 @@ final class Titles implements CommandExecutor, TabCompleter {
         dataFile = new File(plugin.getDataFolder(), "player-titles.yml");
         loadDefs();
         loadPlayers();
+        firstFile = new File(plugin.getDataFolder(), "first-titles.yml");
+        loadFirsts();
         plugin.getLogger().info("칭호 " + defs.size() + "개 정의, 칭호 가진 플레이어 " + players.size() + "명");
     }
 
@@ -235,6 +246,8 @@ final class Titles implements CommandExecutor, TabCompleter {
                 boolean autoEquip = o.equipped == null && list.size() == 1;
                 if (autoEquip) o.equipped = list.get(0).id();
                 save();
+                // 서버 최초 — 칭호 하나씩 줄 때만 (전체 지급은 테스트용이라 최초로 안 침)
+                if (list.size() == 1) checkFirst(t, list.get(0));
                 if (t.getPlayer() != null) {
                     plugin.refresh(t.getPlayer());
                     for (Def d : list)
@@ -281,11 +294,43 @@ final class Titles implements CommandExecutor, TabCompleter {
                 for (Def d : defs.values())
                     s.sendMessage(PokiName.color("&7- &8[" + d.tier() + "] " + d.chat() + " &7명령어: &f" + d.id()));
             }
+            case "최초", "firsts" -> {
+                if (!admin) { noPerm(s); return true; }
+                if (firsts.isEmpty()) { s.sendMessage(PokiName.color("&7아직 최초 기록이 없어요.")); return true; }
+                s.sendMessage(PokiName.color("&e서버 최초 획득 기록 (" + firsts.size() + "개)"));
+                for (Map.Entry<String, First> e : firsts.entrySet()) {
+                    Def d = defs.get(e.getKey());
+                    s.sendMessage(PokiName.color("&7- " + (d == null ? "&8" + e.getKey() : d.chat()) + " &f" + e.getValue().name() + " &8" + e.getValue().at()));
+                }
+            }
+            case "최초초기화", "resetfirsts" -> {
+                if (!admin) { noPerm(s); return true; }
+                if (a.length < 2) {
+                    s.sendMessage(PokiName.color("&e/" + label + " 최초초기화 전체 &7- 최초 기록 전부 지우기 (오픈 직전에 한 번)"));
+                    s.sendMessage(PokiName.color("&e/" + label + " 최초초기화 <칭호> &7- 그 칭호만 지우기"));
+                    s.sendMessage(PokiName.color("&7가진 칭호는 그대로, '처음 받은 사람' 기록만 지워요."));
+                    return true;
+                }
+                String key = join(a, 1);
+                if (key.equals("전체") || key.equalsIgnoreCase("all")) {
+                    int n = firsts.size();
+                    firsts.clear();
+                    saveFirsts();
+                    s.sendMessage(PokiName.color("&a최초 기록 " + n + "개를 지웠어요. 이제부터 처음 받는 사람이 최초로 공지돼요."));
+                } else {
+                    Def d = find(key);
+                    if (d == null) { s.sendMessage(PokiName.color("&c그런 칭호가 없어요: " + key)); return true; }
+                    if (firsts.remove(d.id()) == null) { s.sendMessage(PokiName.color("&7" + d.chat() + " &7은 최초 기록이 없어요.")); return true; }
+                    saveFirsts();
+                    s.sendMessage(PokiName.color("&a" + d.chat() + " &a최초 기록을 지웠어요."));
+                }
+            }
             case "리로드", "reload" -> {
                 if (!admin) { noPerm(s); return true; }
                 plugin.reloadConfig();
                 loadDefs();
                 loadPlayers();
+                loadFirsts();
                 removeAll();
                 for (Player p : Bukkit.getOnlinePlayers()) plugin.refresh(p);
                 s.sendMessage(PokiName.color("&a칭호를 다시 불러왔어요. (" + defs.size() + "개)"));
@@ -328,6 +373,8 @@ final class Titles implements CommandExecutor, TabCompleter {
             s.sendMessage(PokiName.color("&6/" + label + " 회수 <마크닉> <칭호|전체> &7- 칭호 뺏기"));
             s.sendMessage(PokiName.color("&6/" + label + " 보기 <마크닉> &7- 가진 칭호 보기"));
             s.sendMessage(PokiName.color("&6/" + label + " 전체 &7- 칭호 목록"));
+            s.sendMessage(PokiName.color("&6/" + label + " 최초 &7- 서버 최초 획득 기록"));
+            s.sendMessage(PokiName.color("&6/" + label + " 최초초기화 <칭호|전체> &7- 최초 기록 지우기"));
             s.sendMessage(PokiName.color("&6/" + label + " 리로드 &7- titles.yml 다시 불러오기"));
         }
     }
@@ -342,7 +389,7 @@ final class Titles implements CommandExecutor, TabCompleter {
         boolean admin = s.hasPermission(ADMIN);
         if (a.length == 1) {
             List<String> subs = new ArrayList<>(List.of("장착", "해제"));
-            if (admin) subs.addAll(List.of("지급", "회수", "보기", "전체", "리로드"));
+            if (admin) subs.addAll(List.of("지급", "회수", "보기", "전체", "최초", "최초초기화", "리로드"));
             for (String o : subs) if (o.startsWith(a[0])) out.add(o);
             return out;
         }
@@ -353,6 +400,9 @@ final class Titles implements CommandExecutor, TabCompleter {
         } else if (a.length == 2 && admin && List.of("지급", "give", "회수", "take", "보기", "check").contains(sub)) {
             for (Player p : Bukkit.getOnlinePlayers())
                 if (p.getName().toLowerCase(Locale.ROOT).startsWith(a[1].toLowerCase(Locale.ROOT))) out.add(p.getName());
+        } else if (a.length == 2 && admin && (sub.equals("최초초기화") || sub.equals("resetfirsts"))) {
+            if ("전체".startsWith(a[1])) out.add("전체");
+            for (String id : firsts.keySet()) if (id.startsWith(a[1])) out.add(id);
         } else if (a.length == 3 && admin && List.of("지급", "give", "회수", "take").contains(sub)) {
             if ("전체".startsWith(a[2])) out.add("전체");
             for (String id : defs.keySet()) if (id.startsWith(a[2])) out.add(id);
@@ -438,7 +488,8 @@ final class Titles implements CommandExecutor, TabCompleter {
                 continue;
             }
             String chat = PokiName.color(t.getString("chat", "&f[" + name + "]"));
-            defs.put(id.toLowerCase(Locale.ROOT), new Def(id.toLowerCase(Locale.ROOT), name, glyph, chat, t.getString("tier", "")));
+            defs.put(id.toLowerCase(Locale.ROOT), new Def(id.toLowerCase(Locale.ROOT), name, glyph, chat, t.getString("tier", ""),
+                    t.getBoolean("announce-first", true)));
         }
     }
 
@@ -483,6 +534,71 @@ final class Titles implements CommandExecutor, TabCompleter {
                 players.put(UUID.fromString(key), o);
             } catch (IllegalArgumentException ignored) {
             }
+        }
+    }
+
+    // ---------- 서버 최초 ----------
+
+    /** 이 칭호를 서버에서 처음 받은 거면 기록하고 전체 공지 */
+    private void checkFirst(OfflinePlayer t, Def d) {
+        if (firsts.containsKey(d.id())) return;
+        String name = t.getName() == null ? "?" : t.getName();
+        firsts.put(d.id(), new First(t.getUniqueId(), name,
+                LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
+        saveFirsts();
+        if (!d.announceFirst() || !plugin.getConfig().getBoolean("title.first.enabled", true)) return;
+
+        String shown = plugin.nickOf(t.getUniqueId(), name);
+        String msg = plugin.getConfig().getString("title.first.message",
+                "&6&l[서버 최초] &f{nick} &e님이 {title} &e칭호를 서버에서 처음으로 얻었어요!");
+        Bukkit.broadcastMessage(PokiName.color(fill(msg, shown, name, d)));
+
+        String big = plugin.getConfig().getString("title.first.screen-title", "&6&l서버 최초!");
+        String small = plugin.getConfig().getString("title.first.screen-subtitle", "&f{nick} &7- {title}");
+        String soundName = plugin.getConfig().getString("title.first.sound", "UI_TOAST_CHALLENGE_COMPLETE");
+        Sound sound = null;
+        try { if (soundName != null && !soundName.isBlank()) sound = Sound.valueOf(soundName.toUpperCase(Locale.ROOT)); } catch (IllegalArgumentException ignored) { }
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            if (big != null && !big.isBlank())
+                p.sendTitle(PokiName.color(fill(big, shown, name, d)), PokiName.color(fill(small == null ? "" : small, shown, name, d)), 10, 60, 20);
+            if (sound != null) p.playSound(p.getLocation(), sound, 1f, 1f);
+        }
+    }
+
+    private static String fill(String s, String nick, String name, Def d) {
+        return s.replace("{nick}", nick).replace("{name}", name).replace("{title}", d.chat() + "&r").replace("{title_name}", d.name());
+    }
+
+    private void loadFirsts() {
+        firsts.clear();
+        if (firstFile == null || !firstFile.exists()) return;
+        YamlConfiguration y = YamlConfiguration.loadConfiguration(firstFile);
+        ConfigurationSection sec = y.getConfigurationSection("firsts");
+        if (sec == null) return;
+        for (String id : sec.getKeys(false)) {
+            ConfigurationSection f = sec.getConfigurationSection(id);
+            if (f == null) continue;
+            try {
+                firsts.put(migrate(id), new First(UUID.fromString(f.getString("uuid", "")), f.getString("name", "?"), f.getString("at", "")));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+    }
+
+    private void saveFirsts() {
+        YamlConfiguration y = new YamlConfiguration();
+        y.options().setHeader(List.of("서버에서 칭호를 처음 받은 사람 기록 — /칭호 최초초기화 로 지울 수 있음"));
+        for (Map.Entry<String, First> e : firsts.entrySet()) {
+            String base = "firsts." + e.getKey();
+            y.set(base + ".uuid", e.getValue().uuid().toString());
+            y.set(base + ".name", e.getValue().name());
+            y.set(base + ".at", e.getValue().at());
+        }
+        try {
+            plugin.getDataFolder().mkdirs();
+            y.save(firstFile);
+        } catch (IOException ex) {
+            plugin.getLogger().warning("first-titles.yml 저장 실패: " + ex.getMessage());
         }
     }
 
