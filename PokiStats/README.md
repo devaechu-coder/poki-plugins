@@ -12,10 +12,11 @@
 ## 설치
 
 1. `PokiStats-x.y.z.jar` 를 `plugins` 에 넣고 서버 켜기
-2. `plugins/PokiStats/config.yml`
-   - `endpoint`: 통계 서버 받는 주소 (통계 서버 만든 뒤)
-   - `secret`: 통계 서버와 같은 비밀 키 — **체크리스트·디스코드에 붙이지 말 것**
-3. `/통계 리로드`
+2. 통계 서버 주소·키는 **jar 에 같이 빌드됨** — GitHub 레포 Settings → Secrets and variables → Actions 에
+   `STATS_ENDPOINT`(받는 주소), `STATS_SECRET`(통계 서버 INGEST_SECRET 과 같은 값) 를 넣고 다시 빌드
+   - 서버 `config.yml` 의 `endpoint`/`secret` 은 비워두면 jar 값을 씀 (직접 적으면 그게 우선)
+   - 레포 코드에는 안 남지만 **Releases 의 jar 를 열면 보이니** jar 파일은 공유하지 말기. 키가 새면 두 곳 다 바꾸고 다시 빌드
+3. `/통계` 로 "설정됨 (jar 기본값)" 확인
 
 `endpoint` 가 비어 있어도 기록은 `queue.jsonl` 에 계속 쌓임 → 통계 서버가 나중에 생겨도 오픈 첫날부터 기록이 남음 (최대 `max-queue` 개).
 

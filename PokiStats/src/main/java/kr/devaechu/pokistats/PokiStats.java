@@ -15,11 +15,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,10 +44,17 @@ public final class PokiStats extends JavaPlugin implements Listener {
     private final AtomicBoolean busy = new AtomicBoolean();
     /** 접속 시작 시각 (ms) */
     private final Map<UUID, Long> sessionStart = new ConcurrentHashMap<>();
+    /** jar 에 같이 빌드된 주소·키 (built-in.properties) */
+    private final Properties builtIn = new Properties();
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        try (InputStream in = getResource("built-in.properties")) {
+            if (in != null) builtIn.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+        } catch (IOException ex) {
+            getLogger().warning("built-in.properties 를 못 읽었어요: " + ex);
+        }
         queue = new EventQueue(new File(getDataFolder(), "queue.jsonl"), getConfig().getInt("max-queue", 50000), getLogger());
         queue.load();
         sender = new Sender(getLogger(), getDescription().getVersion());
@@ -56,8 +68,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
 
         getServer().getPluginManager().registerEvents(this, this);
         schedule();
-        String ep = getConfig().getString("endpoint", "");
-        getLogger().info(ep.isBlank() ? "endpoint 가 비어 있어서 기록만 쌓아둬요 (config.yml)" : "통계 서버로 " + interval() + "분마다 보냄");
+        getLogger().info(endpoint().isBlank() || secret().isBlank() ? "통계 서버 주소·키가 없어서 기록만 쌓아둬요" : "통계 서버로 " + interval() + "분마다 보냄 (" + source() + ")");
     }
 
     @Override
@@ -68,6 +79,27 @@ public final class PokiStats extends JavaPlugin implements Listener {
         queue.add(Json.event("shutdown", now).toString());
         // 끌 때는 안 보내고 저장만 → 다음에 켜질 때 보냄 (서버 종료가 느려지지 않게)
         queue.save();
+    }
+
+    /** config.yml 에 적은 값이 우선, 비어 있으면 jar 에 빌드된 값 */
+    private String setting(String key) {
+        String v = getConfig().getString(key, "");
+        if (v != null && !v.isBlank()) return v.strip();
+        String b = builtIn.getProperty(key, "");
+        return b.startsWith("${") ? "" : b.strip();
+    }
+
+    private String endpoint() {
+        return setting("endpoint");
+    }
+
+    private String secret() {
+        return setting("secret");
+    }
+
+    private String source() {
+        String v = getConfig().getString("endpoint", "");
+        return v != null && !v.isBlank() ? "config.yml" : "jar 기본값";
     }
 
     private int interval() {
@@ -95,8 +127,8 @@ public final class PokiStats extends JavaPlugin implements Listener {
             if (reply != null) tell(reply, "이미 보내는 중이에요");
             return;
         }
-        final String endpoint = getConfig().getString("endpoint", "");
-        final String secret = getConfig().getString("secret", "");
+        final String endpoint = endpoint();
+        final String secret = secret();
         final String serverId = getConfig().getString("server-id", "poki");
         final boolean debug = getConfig().getBoolean("debug");
         final boolean donateOn = getConfig().getBoolean("donate.enabled", true);
@@ -161,8 +193,8 @@ public final class PokiStats extends JavaPlugin implements Listener {
         String sub = args.length == 0 ? "상태" : args[0];
         switch (sub) {
             case "상태", "status" -> {
-                String ep = getConfig().getString("endpoint", "");
-                tell(s, "통계 서버: " + (ep.isBlank() ? "&c없음 (기록만 쌓는 중)" : "&a설정됨"));
+                boolean ready = !endpoint().isBlank() && !secret().isBlank();
+                tell(s, "통계 서버: " + (ready ? "&a설정됨 &7(" + source() + ")" : "&c없음 (기록만 쌓는 중)"));
                 tell(s, "못 보낸 기록: &e" + queue.size() + "개" + (queue.dropped() > 0 ? " &c(넘쳐서 버린 것 " + queue.dropped() + "개)" : ""));
                 tell(s, "마지막 결과: &7" + sender.lastResult);
                 if (sender.lastOkAt > 0)

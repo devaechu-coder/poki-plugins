@@ -27,7 +27,11 @@ jobs:
           cache: maven
       - name: 빌드
         working-directory: ${{ matrix.plugin }}
-        run: mvn -B -q package
+        env:
+          # PokiStats 에 같이 빌드되는 통계 서버 주소·비밀 키 (레포 Settings → Secrets → Actions)
+          STATS_ENDPOINT: ${{ secrets.STATS_ENDPOINT }}
+          STATS_SECRET: ${{ secrets.STATS_SECRET }}
+        run: mvn -B -q package "-Dstats.endpoint=$STATS_ENDPOINT" "-Dstats.secret=$STATS_SECRET"
       - name: 버전 확인
         id: v
         working-directory: ${{ matrix.plugin }}

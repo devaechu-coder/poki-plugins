@@ -11,6 +11,9 @@
   <properties>
     <maven.compiler.release>21</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- 빌드할 때 GitHub Actions 비밀값(STATS_ENDPOINT, STATS_SECRET)으로 채워짐. 레포에는 비워둠 -->
+    <stats.endpoint></stats.endpoint>
+    <stats.secret></stats.secret>
   </properties>
 
   <repositories>
