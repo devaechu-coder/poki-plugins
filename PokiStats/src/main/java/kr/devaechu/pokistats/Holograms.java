@@ -152,30 +152,75 @@ final class Holograms {
         }
     }
 
-    /** 로비 소지금 판(money-top)과 같은 모양 — 제목 · 줄 · 1~3위 메달 · 4위부터 ◆ · 줄 · 문구 */
-    private static final String[] MEDAL = {"&#FFD166&l①", "&#C9D6E8&l②", "&#D99A72&l③"};
-    private static final String[] RANK_COLOR = {"&#FFF2CC", "&#F2F6FC", "&#FFF0E6"};
+    // ── 글자 모양: config.yml 의 hologram.format (순위별로 hologram.formats.<종류> 에서 덮어쓰기) ──
+
+    private org.bukkit.configuration.ConfigurationSection cfg;
+
+    void setConfig(org.bukkit.configuration.ConfigurationSection hologramSection) {
+        this.cfg = hologramSection;
+    }
+
+    /** formats.<종류>.<항목> → format.<항목> → 기본값 */
+    private String str(Category c, String field, String def) {
+        if (cfg != null) {
+            for (String path : new String[]{"formats." + c.key + "." + field, "format." + field}) {
+                if (cfg.isString(path)) return cfg.getString(path);
+            }
+        }
+        return def;
+    }
+
+    private List<String> list(Category c, String field, List<String> def) {
+        if (cfg != null) {
+            for (String path : new String[]{"formats." + c.key + "." + field, "format." + field}) {
+                if (cfg.isList(path)) return cfg.getStringList(path);
+                if (cfg.isString(path)) return List.of(cfg.getString(path));
+            }
+        }
+        return def;
+    }
+
     private static final String BAR = "&#78DFFF&m                                                  ";
 
     private String text(Holo h, Ranks.Snapshot s) {
         Category c = h.cat();
         List<RankDb.Row> rows = s.get(c, h.weekly());
-        StringBuilder sb = new StringBuilder();
-        sb.append("&#7CFFB2&l✦ &#7CFFB2&l포키 ").append(c.title).append(" &#FFD166&l랭킹 &#7CFFB2&l✦");
-        if (c.hasWeekly() && h.weekly()) sb.append("\n&#B8C7D9이번 주");
-        sb.append('\n').append(BAR);
+        String period = !c.hasWeekly() ? "" : h.weekly() ? "이번 주" : "전체";
+        String foot = footer(c);
+        List<String> out = new ArrayList<>();
+
+        for (String l : list(c, "header", List.of(
+                "&#7CFFB2&l✦ &#7CFFB2&l포키 {title} &#FFD166&l랭킹 &#7CFFB2&l✦", BAR))) out.add(fill(l, c, period, foot));
+        if (h.weekly()) {
+            String w = str(c, "weekly", "&#B8C7D9이번 주");
+            if (!w.isBlank()) out.add(Math.min(1, out.size()), fill(w, c, period, foot));
+        }
+        String lineDef = "&#8FA8C7&l◆&r &#E3ECF8{rank}등 : &e{nick} &f/ &a{value}";
+        String[] topDef = {
+                "&#FFD166&l①&r &#FFF2CC{rank}등 : &e{nick} &f/ &a{value}",
+                "&#C9D6E8&l②&r &#F2F6FC{rank}등 : &e{nick} &f/ &a{value}",
+                "&#D99A72&l③&r &#FFF0E6{rank}등 : &e{nick} &f/ &a{value}"};
         for (int i = 1; i <= size; i++) {
             RankDb.Row r = Display.at(rows, i);
-            String medal = i <= 3 ? MEDAL[i - 1] : "&#8FA8C7&l◆";
-            String base = i <= 3 ? RANK_COLOR[i - 1] : "&#E3ECF8";
-            sb.append('\n').append(medal).append("&r ").append(base).append(i).append("등 : ");
-            if (r == null) sb.append("&7-");
-            else sb.append("&e").append(Display.nick(r.name())).append(" &f/ &a").append(c.format(r.value()));
+            String l;
+            if (r == null) l = str(c, "empty", "&#8FA8C7&l◆&r &#E3ECF8{rank}등 : &7-");
+            else l = str(c, "line-" + i, i <= 3 ? topDef[i - 1] : str(c, "line", lineDef));
+            if (r != null) {
+                l = l.replace("{nick}", Display.nick(r.name())).replace("{name}", r.name())
+                        .replace("{value}", c.format(r.value()));
+            }
+            out.add(fill(l.replace("{rank}", String.valueOf(i)), c, period, foot));
         }
-        sb.append('\n').append(BAR);
-        String foot = footer(c);
-        if (!foot.isBlank()) sb.append('\n').append(foot);
-        return Display.color(sb.toString());
+        for (String l : list(c, "footer", List.of(BAR, "&#B8C7D9&o{footer}"))) {
+            if (l.contains("{footer}") && foot.isBlank()) continue; // 문구가 없으면 그 줄은 빼기
+            out.add(fill(l, c, period, foot));
+        }
+        return Display.color(String.join("\n", out));
+    }
+
+    private String fill(String l, Category c, String period, String foot) {
+        return l.replace("{title}", c.title).replace("{size}", String.valueOf(size))
+                .replace("{period}", period).replace("{footer}", foot);
     }
 
     private final java.util.Map<String, String> footers = new java.util.HashMap<>();
@@ -188,7 +233,7 @@ final class Holograms {
     private String footer(Category c) {
         String f = footers.get(c.key);
         if (f == null) f = footers.get(c.title.replace(" ", ""));
-        return f == null || f.isBlank() ? "" : "&#B8C7D9&o" + f;
+        return f == null ? "" : f;
     }
 
     private void kill(int id) {

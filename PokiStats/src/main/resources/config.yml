@@ -48,6 +48,35 @@ hologram:
   footer:
     money: '부자의 자리는 당신의 것일지도!'
     cobble: '부자의 자리는 당신의 것일지도!'
+  # 홀로그램 글자 모양 — 마음대로 바꾸고 /통계 리로드 (1분 안에 바뀜)
+  # 색: &a 같은 색 코드, &#RRGGBB 헥스 색, &l 굵게, &o 기울임, &m 취소선, &r 초기화
+  # 쓸 수 있는 값: {title} 순위 이름(소지금·포획왕…), {rank} 등수, {nick} 한글닉, {name} 마크닉,
+  #             {value} 값($152,000 / 340C / 120마리), {size} 몇 등까지, {period} 전체/이번 주, {footer} 위 footer 문구
+  format:
+    # 맨 위 줄들 (여러 줄 가능)
+    header:
+      - '&#7CFFB2&l✦ &#7CFFB2&l포키 {title} &#FFD166&l랭킹 &#7CFFB2&l✦'
+      - '&#78DFFF&m                                                  '
+    # 이번 주 홀로그램이면 제목 바로 아래에 붙는 줄 (빈칸이면 안 붙음)
+    weekly: '&#B8C7D9이번 주'
+    # 1·2·3등 줄
+    line-1: '&#FFD166&l①&r &#FFF2CC{rank}등 : &e{nick} &f/ &a{value}'
+    line-2: '&#C9D6E8&l②&r &#F2F6FC{rank}등 : &e{nick} &f/ &a{value}'
+    line-3: '&#D99A72&l③&r &#FFF0E6{rank}등 : &e{nick} &f/ &a{value}'
+    # 4등부터
+    line: '&#8FA8C7&l◆&r &#E3ECF8{rank}등 : &e{nick} &f/ &a{value}'
+    # 그 등수에 아무도 없을 때
+    empty: '&#8FA8C7&l◆&r &#E3ECF8{rank}등 : &7-'
+    # 맨 아래 줄들 ({footer} 가 든 줄은 문구가 없는 순위에선 안 나옴)
+    footer:
+      - '&#78DFFF&m                                                  '
+      - '&#B8C7D9&o{footer}'
+  # 순위마다 다르게 하고 싶으면 여기에 같은 항목으로 덮어쓰기 (적은 것만 바뀜). 예:
+  # formats:
+  #   cobble:
+  #     header:
+  #       - '&6&l✦ 코블달러 부자 TOP {size} ✦'
+  formats: {}
   # 설치·이동할 때 발 위치에서 몇 칸 위가 맨 아랫줄인지 (글자는 여기서 위로 쌓임)
   # 0 = 서 있는 발 위치가 맨 아랫줄, 2.2 = 머리 바로 위
   height: 2.2
