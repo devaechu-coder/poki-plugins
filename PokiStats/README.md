@@ -48,7 +48,7 @@
 순위: 포획왕 · 도감왕 · 이로치 사냥꾼 · 전설 수집가 · 배틀왕 · PvP 강자(승률) · 최장 연승 · 진화 마스터 · 부화 장인 · 배틀 타워 최고층 · 레이드 영웅 · 체육관 정복 · 마스터볼 큰손 · 소지금 · 코블달러
 
 - 이번 주 = 한국시간 월요일 0시부터. 같은 값이면 먼저 도달한 사람이 위
-- **운영진 숨기기**: 권한 `pokistats.rank.hidden` (LuckPerms 로 운영진 그룹에) 또는 config `rank.hiddenPlayers` 에 마크닉/uuid. OP 라도 자동으로는 안 숨겨짐. 기록은 쌓이고 표시에서만 빠짐, 웹 순위에서도 빠짐
+- **운영진 숨기기**: 권한 `pokistats.rank.hidden` (LuckPerms 로 운영진 그룹에) 또는 config `rank.hiddenPlayers` 에 마크닉/uuid, 또는 **PokiName 순위 제외 목록**(`rank-exclude` 등, 한글닉도 됨 — `rank.use-pokiname-exclude: true` 기본). OP 라도 자동으로는 안 숨겨짐. 기록은 쌓이고 표시에서만 빠짐, 웹 순위에서도 빠짐
 - 한글닉: PokiName 이 있으면 한글닉으로 표시
 
 ### PlaceholderAPI
@@ -66,5 +66,6 @@
 
 ## 버전
 
+- 1.1.1 — 운영진 숨김에 PokiName 순위 제외 목록도 같이 씀 (한글닉으로 적어도 됨), 순위 계산 때마다 접속자 숨김 상태 갱신
 - 1.1.0 — 게임 이벤트 전달(PokiEvents), rank_hide · wealth, 명예의 전당 GUI · 로비 홀로그램 · PAPI
 - 1.0.0 — 동접 · 접속 기록 · 후원 통계 (1단계)

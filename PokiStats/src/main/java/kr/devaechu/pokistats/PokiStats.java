@@ -292,19 +292,61 @@ public final class PokiStats extends JavaPlugin implements Listener {
     }
 
     private void refreshRanks() {
-        ranks.refresh(getConfig().getStringList("rank.hiddenPlayers"),
+        List<String> names = hiddenNames();
+        for (Player p : Bukkit.getOnlinePlayers()) ranks.player(p.getUniqueId().toString(), p.getName(), hidden(p, names));
+        ranks.refresh(names,
                 () -> Bukkit.getScheduler().runTask(this, () -> holos.update()));
     }
 
     /** 운영진 숨김 — 권한(pokistats.rank.hidden) 또는 config rank.hiddenPlayers */
     private boolean hidden(Player p) {
+        return hidden(p, hiddenNames());
+    }
+
+    private boolean hidden(Player p, List<String> names) {
         if (p.hasPermission("pokistats.rank.hidden")) return true;
-        for (String h : getConfig().getStringList("rank.hiddenPlayers")) {
-            if (h == null) continue;
-            String v = h.trim();
+        for (String v : names) {
             if (v.equalsIgnoreCase(p.getName()) || v.equalsIgnoreCase(p.getUniqueId().toString())) return true;
         }
         return false;
+    }
+
+    /**
+     * 순위에서 뺄 사람 (마크닉·uuid) — PokiStats rank.hiddenPlayers
+     * + PokiName 의 순위 제외 목록(rank-exclude, money-rank.exclude, cobble-rank.exclude, rank.use-pokiname-exclude)
+     * 한글닉으로 적힌 건 마크닉으로 바꿔서 넣음. 메인 스레드에서 부름.
+     */
+    private List<String> hiddenNames() {
+        java.util.Set<String> raw = new java.util.LinkedHashSet<>();
+        addNames(raw, getConfig(), "rank.hiddenPlayers");
+        org.bukkit.plugin.Plugin pn = getServer().getPluginManager().getPlugin("PokiName");
+        if (getConfig().getBoolean("rank.use-pokiname-exclude", true) && pn != null && pn.isEnabled()) {
+            org.bukkit.configuration.file.FileConfiguration c = pn.getConfig();
+            addNames(raw, c, "rank-exclude");
+            addNames(raw, c, "money-rank.exclude");
+            addNames(raw, c, "cobble-rank.exclude");
+        }
+        if (raw.isEmpty()) return List.of();
+        java.util.Set<String> lower = new java.util.HashSet<>();
+        for (String r : raw) lower.add(r.toLowerCase(java.util.Locale.ROOT));
+        List<String> out = new ArrayList<>(raw);
+        // 한글닉으로 적은 사람 → 마크닉 찾아서 추가
+        for (org.bukkit.OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+            String name = op.getName();
+            if (name == null || lower.contains(name.toLowerCase(java.util.Locale.ROOT))) continue;
+            String nick = Display.nick(name);
+            if (nick != null && lower.contains(nick.trim().toLowerCase(java.util.Locale.ROOT))) out.add(name);
+        }
+        return out;
+    }
+
+    private static void addNames(java.util.Set<String> out, org.bukkit.configuration.ConfigurationSection c, String path) {
+        if (c == null || !c.contains(path)) return;
+        List<String> list = c.isList(path) ? c.getStringList(path) : List.of(String.valueOf(c.getString(path, "")).split(","));
+        for (String n : list) {
+            String v = n == null ? "" : ChatColor.stripColor(ChatColor.translateAlternateColorCodes('&', n)).trim();
+            if (!v.isEmpty()) out.add(v);
+        }
     }
 
     private void rankHide(Player p) {
