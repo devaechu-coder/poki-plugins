@@ -61,10 +61,20 @@ User-Agent: PokiStats/1.0.0
 - `note` 예: `입주민 10,000원 메뉴 · 3개` → 어느 메뉴(보상)가 나갔는지
 - 후원자 닉네임·메시지는 보내지 않음
 
-## 2단계에서 추가될 것 (예정, 아직 안 보냄)
+## 2단계 (PokiStats 1.1.0 + PokiEvents 모드)
 
-- `gym` — 관장·사천왕 배틀: `uuid`, `trainerId`(예: `kanto_brock`), `result`(`win`/`lose`/`quit`)
-- `capture` — 포획: `uuid`, `species`, `shiny`, `legendary`
-- 배틀타워 최고층 — 사용하는 모드 확인 후
+통계 서버 요구사항 문서(프로젝트 `pokistats-plugin-events.md`) 그대로.
 
-모르는 `t` 는 저장만 하거나 무시하고 2xx 로 받아주면, 2단계 때 통계 서버를 먼저 안 고쳐도 안 깨짐.
+| t | 필드 |
+| --- | --- |
+| `capture` | `uuid, species, level, shiny, legendary, mythical, ultraBeast, ball` |
+| `battle` | `uuid, kind`(wild/npc/pvp)`, result`(win/lose/flee) |
+| `evolve` | `uuid, from, to, shiny` |
+| `hatch` | `uuid, species, shiny` |
+| `gym` | `uuid, trainerId`(kanto_brock … kanto_league_lance, kanto_champion_blue)`, result`(win/lose/quit) |
+| `tower` | `uuid, floor, streak, result`(win/lose/forfeit) |
+| `raid` | `uuid, boss, result`(win/lose) |
+| `rank_hide` | `uuid, name, hidden` — 접속할 때마다 |
+| `wealth` | `players: [{uuid, name, money, coin}]` — money = 소지금($), coin = 코블달러(C). 10분마다 + 종료 시, 접속자 + 소지금·코블달러 상위 100 |
+
+모르는 `t` 는 저장만 하거나 무시하고 2xx 로 받아주기.

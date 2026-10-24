@@ -28,9 +28,17 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import kr.devaechu.pokistats.rank.Category;
+import kr.devaechu.pokistats.rank.RankDb;
+import kr.devaechu.pokistats.rank.Ranks;
 
 /**
- * 포키 운영 통계 (1단계): 동접자 추이 · 접속 기록(신규/플레이타임/재접속) · 후원 통계.
+ * 포키 운영 통계.
+ * 1단계: 동접자 추이 · 접속 기록(신규/플레이타임/재접속) · 후원 통계
+ * 2단계: PokiEvents 모드 이벤트(포획·배틀·진화·부화·관장·배틀타워·레이드) 전달 · 운영진 숨김 · 돈 스냅샷
+ *        + 인게임 명예의 전당(/명예의전당 GUI · 로비 홀로그램 · PAPI)
  * 기록은 queue.jsonl 에 쌓였다가 몇 분마다 통계 서버로 보냄 (서버 → 밖으로만).
  */
 public final class PokiStats extends JavaPlugin implements Listener {
@@ -47,9 +55,21 @@ public final class PokiStats extends JavaPlugin implements Listener {
     /** jar 에 같이 빌드된 주소·키 (built-in.properties) */
     private final Properties builtIn = new Properties();
 
+    private Ranks ranks;
+    private Inbox inbox;
+    private Wealth wealth;
+    private HofGui gui;
+    private Holograms holos;
+    private final List<BukkitTask> rankTasks = new ArrayList<>();
+    /** /명예의전당 초기화 확인 대기 (보낸 사람 → 만료 시각) */
+    private final Map<String, Long> resetConfirm = new ConcurrentHashMap<>();
+
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        // 새 버전에서 생긴 설정(rank·wealth·hologram)을 기존 config.yml 에 채워 넣음 (적어둔 값은 그대로)
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         try (InputStream in = getResource("built-in.properties")) {
             if (in != null) builtIn.load(new InputStreamReader(in, StandardCharsets.UTF_8));
         } catch (IOException ex) {
@@ -68,12 +88,14 @@ public final class PokiStats extends JavaPlugin implements Listener {
 
         getServer().getPluginManager().registerEvents(this, this);
         schedule();
+        startRanks();
         getLogger().info(endpoint().isBlank() || secret().isBlank() ? "통계 서버 주소·키가 없어서 기록만 쌓아둬요" : "통계 서버로 " + interval() + "분마다 보냄 (" + source() + ")");
     }
 
     @Override
     public void onDisable() {
         if (task != null) task.cancel();
+        stopRanks(true);
         long now = System.currentTimeMillis();
         for (Player p : Bukkit.getOnlinePlayers()) queue.add(quit(p, now, "shutdown").toString());
         queue.add(Json.event("shutdown", now).toString());
@@ -159,6 +181,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 .put("first", !p.hasPlayedBefore())
                 .put("totalPlayMin", playMinutes(p))
                 .toString());
+        rankHide(p);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -190,6 +213,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender s, Command cmd, String label, String[] args) {
+        if (cmd.getName().equalsIgnoreCase("hof")) return hof(s, args);
         String sub = args.length == 0 ? "상태" : args[0];
         switch (sub) {
             case "상태", "status" -> {
@@ -199,6 +223,8 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 tell(s, "마지막 결과: &7" + sender.lastResult);
                 if (sender.lastOkAt > 0)
                     tell(s, "마지막 성공: &7" + new SimpleDateFormat("MM-dd HH:mm:ss").format(new Date(sender.lastOkAt)));
+                if (inbox != null) tell(s, "게임 이벤트(PokiEvents): &e" + inbox.read + "개 &7읽음 (이번 실행)");
+                if (ranks != null) tell(s, "명예의 전당: " + (ranks.isOk() ? "&a켜짐" : "&c꺼짐 (ranks.db 오류)"));
                 tell(s, "&7/통계 보내기 · /통계 리로드");
             }
             case "보내기", "send" -> {
@@ -209,11 +235,236 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 reloadConfig();
                 queue.setMax(getConfig().getInt("max-queue", 50000));
                 schedule();
+                stopRanks(false);
+                startRanks();
                 tell(s, "config.yml 다시 읽음 · " + interval() + "분마다");
             }
             default -> tell(s, "/통계 [상태|보내기|리로드]");
         }
         return true;
+    }
+
+    // ── 2단계: 게임 이벤트 · 명예의 전당 ─────────────────────────
+
+    private void startRanks() {
+        if (ranks == null) {
+            ranks = new Ranks(getLogger());
+            ranks.open(new File(getDataFolder(), "ranks.db"));
+            inbox = new Inbox(new File(getDataFolder(), "inbox"), queue, ranks, getLogger());
+            wealth = new Wealth(getLogger());
+            gui = new HofGui(ranks);
+            getServer().getPluginManager().registerEvents(gui, this);
+            holos = new Holograms(new File(getDataFolder(), "holograms.yml"), ranks, getLogger());
+            if (getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+                try {
+                    new StatsExpansion(this, ranks).register();
+                } catch (Throwable t) {
+                    getLogger().warning("PlaceholderAPI 연결 실패: " + t);
+                }
+            }
+        }
+        wealth.resetEconomy();
+        holos.setSize(getConfig().getInt("hologram.size", 3));
+        holos.load();
+        // 모드 이벤트 받기 — 1초마다
+        rankTasks.add(Bukkit.getScheduler().runTaskTimerAsynchronously(this, inbox::poll, 20L, 20L));
+        // 순위 다시 계산 → 홀로그램 갱신
+        long refresh = Math.max(10, getConfig().getInt("rank.refresh-seconds", 60)) * 20L;
+        rankTasks.add(Bukkit.getScheduler().runTaskTimer(this, this::refreshRanks, 40L, refresh));
+        // 돈 스냅샷 — 기본 10분마다
+        long wp = Math.max(1, getConfig().getInt("wealth.interval-minutes", 10)) * 60L * 20L;
+        rankTasks.add(Bukkit.getScheduler().runTaskTimer(this, () -> snapshotWealth(true), 20L * 60, wp));
+        for (Player p : Bukkit.getOnlinePlayers()) rankHide(p);
+    }
+
+    private void stopRanks(boolean shutdown) {
+        rankTasks.forEach(BukkitTask::cancel);
+        rankTasks.clear();
+        if (holos != null) holos.clear();
+        if (!shutdown || ranks == null) return;
+        try {
+            inbox.poll();
+        } catch (RuntimeException ex) {
+            getLogger().warning("inbox 마지막 읽기 실패: " + ex);
+        }
+        snapshotWealth(true);
+        ranks.close();
+    }
+
+    private void refreshRanks() {
+        ranks.refresh(getConfig().getStringList("rank.hiddenPlayers"),
+                () -> Bukkit.getScheduler().runTask(this, () -> holos.update()));
+    }
+
+    /** 운영진 숨김 — 권한(pokistats.rank.hidden) 또는 config rank.hiddenPlayers */
+    private boolean hidden(Player p) {
+        if (p.hasPermission("pokistats.rank.hidden")) return true;
+        for (String h : getConfig().getStringList("rank.hiddenPlayers")) {
+            if (h == null) continue;
+            String v = h.trim();
+            if (v.equalsIgnoreCase(p.getName()) || v.equalsIgnoreCase(p.getUniqueId().toString())) return true;
+        }
+        return false;
+    }
+
+    private void rankHide(Player p) {
+        boolean h = hidden(p);
+        if (ranks != null) ranks.player(p.getUniqueId().toString(), p.getName(), h);
+        queue.add(Json.event("rank_hide", System.currentTimeMillis())
+                .put("uuid", p.getUniqueId().toString())
+                .put("name", p.getName())
+                .put("hidden", h)
+                .toString());
+    }
+
+    /** 메인 스레드: 전원 잔액 → 로컬 순위, 일부(접속자 + 상위 100씩) → 통계 서버 wealth */
+    private void snapshotWealth(boolean upload) {
+        if (wealth == null || ranks == null) return;
+        try {
+            long now = System.currentTimeMillis();
+            List<RankDb.Wealth> all = wealth.collect(getConfig().getString("wealth.cobble-data-folder", ""));
+            if (all.isEmpty()) return;
+            ranks.wealth(all, now);
+            if (!upload) return;
+            StringBuilder sb = new StringBuilder("[");
+            boolean first = true;
+            for (RankDb.Wealth w : Wealth.pickForUpload(all)) {
+                if (!first) sb.append(',');
+                first = false;
+                sb.append("{\"uuid\":").append(Json.str(w.uuid()))
+                        .append(",\"name\":").append(Json.str(w.name()))
+                        .append(",\"money\":").append((long) Math.floor(w.money()))
+                        .append(",\"coin\":").append((long) Math.floor(w.coin())).append('}');
+            }
+            sb.append(']');
+            queue.add(Json.event("wealth", now).putRaw("players", sb.toString()).toString());
+        } catch (RuntimeException ex) {
+            getLogger().warning("돈 스냅샷 실패: " + ex);
+        }
+    }
+
+    private boolean hof(CommandSender s, String[] args) {
+        if (ranks == null || !ranks.isOk()) {
+            tell(s, "&c명예의 전당을 쓸 수 없어요 (ranks.db 오류 — 콘솔 확인)");
+            return true;
+        }
+        boolean admin = s.hasPermission("poki.stats.admin");
+        if (args.length == 0) {
+            if (s instanceof Player p) gui.openMain(p);
+            else tell(s, "게임 안에서 쓰는 명령어예요");
+            return true;
+        }
+        String sub = args[0];
+        if (sub.equals("홀로그램") || sub.equalsIgnoreCase("holo")) {
+            if (!admin) return noPerm(s);
+            return holo(s, args);
+        }
+        if (sub.equals("초기화") || sub.equalsIgnoreCase("reset")) {
+            if (!admin) return noPerm(s);
+            String key = s.getName();
+            Long until = resetConfirm.get(key);
+            if (args.length > 1 && (args[1].equals("확인") || args[1].equalsIgnoreCase("confirm")) && until != null && until > System.currentTimeMillis()) {
+                resetConfirm.remove(key);
+                ranks.reset(msg -> Bukkit.getScheduler().runTask(this, () -> {
+                    tell(s, "&a" + msg + " &7(통계 서버 쪽은 운영 통계에서 따로 지워야 숫자가 같아요)");
+                    refreshRanks();
+                }));
+                return true;
+            }
+            resetConfirm.put(key, System.currentTimeMillis() + 30_000);
+            tell(s, "&c인게임 순위 기록(포획·배틀 등)을 전부 지워요. 돈 순위는 그대로.");
+            tell(s, "&c30초 안에 &f/명예의전당 초기화 확인 &c을 입력하면 지워져요");
+            return true;
+        }
+        if (sub.equals("새로고침") || sub.equalsIgnoreCase("refresh")) {
+            if (!admin) return noPerm(s);
+            snapshotWealth(false);
+            refreshRanks();
+            tell(s, "순위를 다시 계산했어요");
+            return true;
+        }
+        Category c = Category.find(sub);
+        if (c == null) {
+            tell(s, "순위 종류: &f" + java.util.Arrays.stream(Category.values()).map(x -> x.title.replace(" ", "")).collect(Collectors.joining(", ")));
+            if (admin) tell(s, "&7관리: /명예의전당 홀로그램 · 초기화 · 새로고침");
+            return true;
+        }
+        boolean weekly = args.length > 1 && (args[1].equals("주간") || args[1].equals("이번주") || args[1].equalsIgnoreCase("week"));
+        if (s instanceof Player p) gui.openRank(p, c, weekly);
+        else {
+            List<RankDb.Row> rows = ranks.snapshot().get(c, weekly);
+            tell(s, c.title + (weekly && c.hasWeekly() ? " (이번 주)" : ""));
+            for (int i = 0; i < Math.min(10, rows.size()); i++)
+                tell(s, (i + 1) + "위 " + rows.get(i).name() + " · " + c.format(rows.get(i).value()));
+        }
+        return true;
+    }
+
+    private boolean holo(CommandSender s, String[] args) {
+        String op = args.length > 1 ? args[1] : "";
+        switch (op) {
+            case "설치", "add" -> {
+                if (!(s instanceof Player p)) { tell(s, "게임 안에서 써 주세요"); return true; }
+                Category c = args.length > 2 ? Category.find(args[2]) : null;
+                if (c == null) { tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간]"); return true; }
+                boolean weekly = args.length > 3 && (args[3].equals("주간") || args[3].equalsIgnoreCase("week"));
+                Holograms.Holo h = holos.add(c, weekly, p.getLocation().add(0, 2.2, 0));
+                tell(s, "&a홀로그램 #" + h.id() + " 설치: " + c.title + (h.weekly() ? " (이번 주)" : ""));
+            }
+            case "목록", "list" -> {
+                List<Holograms.Holo> l = holos.list();
+                if (l.isEmpty()) tell(s, "설치된 홀로그램이 없어요");
+                for (Holograms.Holo h : l)
+                    tell(s, "#" + h.id() + " &e" + h.cat().title + (h.weekly() ? " (이번 주)" : "") + " &7" + h.world()
+                            + " " + (int) h.x() + ", " + (int) h.y() + ", " + (int) h.z());
+            }
+            case "삭제", "remove" -> {
+                int id = args.length > 2 ? parse(args[2]) : -1;
+                tell(s, holos.remove(id) ? "&a#" + id + " 삭제" : "&c그 번호의 홀로그램이 없어요 (/명예의전당 홀로그램 목록)");
+            }
+            case "이동", "move" -> {
+                if (!(s instanceof Player p)) { tell(s, "게임 안에서 써 주세요"); return true; }
+                int id = args.length > 2 ? parse(args[2]) : -1;
+                tell(s, holos.move(id, p.getLocation().add(0, 2.2, 0)) ? "&a#" + id + " 을 여기로 옮겼어요" : "&c그 번호의 홀로그램이 없어요");
+            }
+            default -> {
+                tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간] &7— 서 있는 자리 위에 TOP " + getConfig().getInt("hologram.size", 3));
+                tell(s, "/명예의전당 홀로그램 목록 · 삭제 <번호> · 이동 <번호>");
+            }
+        }
+        return true;
+    }
+
+    private static int parse(String s) {
+        try {
+            return Integer.parseInt(s.replace("#", ""));
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    private static boolean noPerm(CommandSender s) {
+        tell(s, "&c운영자만 쓸 수 있어요");
+        return true;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender s, Command cmd, String alias, String[] args) {
+        if (!cmd.getName().equalsIgnoreCase("hof")) return List.of();
+        List<String> cats = java.util.Arrays.stream(Category.values()).map(c -> c.title.replace(" ", "")).toList();
+        boolean admin = s.hasPermission("poki.stats.admin");
+        if (args.length == 1) {
+            List<String> l = new ArrayList<>(cats);
+            if (admin) l.addAll(List.of("홀로그램", "초기화", "새로고침"));
+            return l.stream().filter(x -> x.startsWith(args[0])).toList();
+        }
+        if (args.length == 2 && Category.find(args[0]) != null) return List.of("주간", "전체");
+        if (admin && args[0].equals("홀로그램")) {
+            if (args.length == 2) return List.of("설치", "목록", "삭제", "이동");
+            if (args.length == 3 && args[1].equals("설치")) return cats.stream().filter(x -> x.startsWith(args[2])).toList();
+            if (args.length == 4 && args[1].equals("설치")) return List.of("주간");
+        }
+        return List.of();
     }
 
     private static void tell(CommandSender s, String msg) {
