@@ -3,7 +3,7 @@
 # 바꾼 뒤 /한글닉 리로드
 
 # config 형식 버전 (플러그인이 관리 — 건드리지 않기)
-config-version: 2
+config-version: 3
 
 # 머리 위 이름표
 nametag:
@@ -77,6 +77,9 @@ rank-exclude: []
 # 한글닉이 있으면 한글닉으로, 없으면 마크닉으로 나옴. 바꾼 뒤 /한글닉 리로드
 money-rank:
   enabled: true
+  # 어떤 돈 플러그인 잔액으로 순위를 낼지 (Essentials, CMI …). 비우면 Vault 기본
+  # 서버에 돈 플러그인이 여러 개면 유저가 실제로 쓰는 쪽을 적기 — /한글닉 순위확인 으로 지금 읽는 곳 확인
+  economy: ''
   # 몇 초마다 다시 계산할지
   interval-seconds: 10
   # 몇 등까지 계산할지 (최대 50) — 홀로그램 줄 수와 맞추기
@@ -94,9 +97,12 @@ money-rank:
   # 1등이 바뀔 때 콘솔에서 실행할 명령어 ({name} 마크닉, {nick} 한글닉, {value} 금액)
   # 서버 켤 때·리로드할 때도 한 번 실행됨
   # Citizens 7번 NPC: 이름을 1등 한글닉으로, 스킨을 1등 스킨으로 (이름 먼저 바꾸고 스킨)
+  # 1등이 같아도 한글닉이 바뀌면 다시 실행. 결과는 /한글닉 순위확인, 바로 다시 실행은 /한글닉 순위적용
   on-first-change:
     - 'npc rename --id 7 {nick}'
     - 'npc skin --id 7 {name}'
+  # 서버 켜고 몇 초 뒤부터 1등 명령어를 실행할지 (Citizens 가 NPC 를 다 불러온 뒤에 하려고)
+  first-change-delay-seconds: 20
 
 # 코블달러 순위 (CobbleDollars 모드). 홀로그램에 %pokiname_cobble_1% ~ %pokiname_cobble_9% 로 사용
 # 한 번이라도 접속한 사람 전부. 접속 중인 사람은 실시간, 나머지는 모드 저장 파일 값.

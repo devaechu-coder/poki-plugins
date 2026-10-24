@@ -28,8 +28,12 @@ abstract class Rank {
     private final String defaultFormat;
     private BukkitTask task;
     private volatile List<Entry> top = Collections.emptyList();
-    /** 마지막으로 명령어를 실행한 1등 (바뀔 때만 실행) */
-    private UUID lastFirst;
+    /** 마지막으로 명령어를 실행한 1등 — uuid + 마크닉 + 한글닉 (한글닉만 바뀌어도 다시 실행) */
+    private String lastFirst;
+    /** 서버 켜진 직후엔 Citizens NPC 가 아직 안 불러와졌을 수 있어서 이 시각 전엔 1등 명령어를 미룸 */
+    private long readyAt;
+    private final List<String> lastResults = new ArrayList<>();
+    private int lastCount;
 
     Rank(PokiName plugin, String key, String label, String defaultFormat) {
         this.plugin = plugin;
@@ -47,6 +51,7 @@ abstract class Rank {
     void start() {
         stop();
         lastFirst = null; // 리로드하면 한 번 다시 적용
+        readyAt = System.currentTimeMillis() + Math.max(0, section().getLong("first-change-delay-seconds", 20)) * 1000L;
         top = Collections.emptyList();
         ConfigurationSection c = section();
         if (!c.getBoolean("enabled", true) || !prepare()) return;
@@ -81,6 +86,7 @@ abstract class Rank {
                     || exclude.contains(PokiName.stripColor(plugin.nickOf(e.id(), e.name())).trim().toLowerCase(Locale.ROOT))) continue;
             all.add(e);
         }
+        lastCount = all.size();
         all.sort((a, b) -> Double.compare(b.value(), a.value()));
         top = List.copyOf(all.subList(0, Math.min(size, all.size())));
         onFirstChanged();
@@ -106,26 +112,108 @@ abstract class Rank {
         }
     }
 
-    /** 1등이 바뀌면 config 의 명령어 실행 (예: 1등 NPC 스킨 바꾸기) */
+    /**
+     * 1등이 바뀌면 config 의 명령어 실행 (예: 1등 NPC 이름·스킨 바꾸기).
+     * - 1등이 같아도 한글닉이 바뀌면 다시 실행 (예전엔 uuid 만 봐서 NPC 이름이 옛 닉에 멈춰 있었음)
+     * - 서버 켜진 직후(first-change-delay-seconds)와 Citizens 가 아직 안 켜졌을 땐 미뤘다가 다음 갱신 때 실행
+     *   (예전엔 Citizens 가 NPC 를 불러오기 전에 실행돼서 실패해도 "실행함" 으로 처리돼 다시 안 했음)
+     */
     private void onFirstChanged() {
         Entry first = get(1);
-        if (first == null || first.id().equals(lastFirst)) return;
-        lastFirst = first.id();
+        if (first == null) return;
+        String nick = PokiName.stripColor(plugin.nickOf(first.id(), first.name())).trim();
+        String key = first.id() + "|" + first.name() + "|" + nick;
+        if (key.equals(lastFirst)) return;
         List<String> cmds = section().getStringList("on-first-change");
-        if (!cmds.isEmpty())
-            plugin.getLogger().info(label + " 1등: " + plugin.nickOf(first.id(), first.name()) + " (" + first.name() + ") → 명령어 " + cmds.size() + "개 실행");
+        if (cmds.isEmpty()) {
+            lastFirst = key;
+            return;
+        }
+        if (System.currentTimeMillis() < readyAt) return;
+        boolean npc = cmds.stream().anyMatch(c -> c.trim().replaceFirst("^/", "").toLowerCase(Locale.ROOT).startsWith("npc "));
+        if (npc && !Bukkit.getPluginManager().isPluginEnabled("Citizens")) return;
+        lastFirst = key;
+        runFirstCommands(first, nick, cmds);
+    }
+
+    private void runFirstCommands(Entry first, String nick, List<String> cmds) {
+        lastResults.clear();
+        plugin.getLogger().info(label + " 1등: " + nick + " (" + first.name() + ") → 명령어 " + cmds.size() + "개 실행");
         for (String cmd : cmds) {
             String c = cmd.replace("{name}", first.name())
-                    .replace("{nick}", plugin.nickOf(first.id(), first.name()))
-                    .replace("{value}", formatValue(first.value()));
+                    .replace("{nick}", nick)
+                    .replace("{value}", formatValue(first.value())).trim();
             if (c.startsWith("/")) c = c.substring(1);
+            String npcProblem = checkNpc(c);
+            if (npcProblem != null) {
+                plugin.getLogger().warning("1등 변경 명령어 건너뜀 — " + npcProblem + ": " + c);
+                lastResults.add("&c건너뜀 &7" + c + " &c(" + npcProblem + ")");
+                continue;
+            }
             try {
-                if (!Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c))
-                    plugin.getLogger().warning("1등 변경 명령어가 안 먹힘 (없는 명령어거나 형식이 틀림): " + c);
+                boolean ok = Bukkit.dispatchCommand(Bukkit.getConsoleSender(), c);
+                if (!ok) plugin.getLogger().warning("1등 변경 명령어가 안 먹힘 (없는 명령어거나 형식이 틀림): " + c);
+                lastResults.add((ok ? "&a실행 &7" : "&c안 먹힘 &7") + c);
             } catch (RuntimeException ex) {
                 plugin.getLogger().warning("1등 변경 명령어 실패 (" + c + "): " + ex.getMessage());
+                lastResults.add("&c오류 &7" + c + " &c(" + ex.getMessage() + ")");
             }
         }
+    }
+
+    /** "npc ... --id N" 이면 그 번호 NPC 가 실제로 있는지 Citizens 에 물어봄. 문제 없으면 null */
+    private static String checkNpc(String c) {
+        if (!c.toLowerCase(Locale.ROOT).startsWith("npc ")) return null;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("--id\\s+(\\d+)").matcher(c);
+        if (!m.find()) return "--id 번호가 없음 (콘솔엔 선택된 NPC 가 없어서 --id 가 꼭 필요)";
+        int id = Integer.parseInt(m.group(1));
+        try {
+            Class<?> api = Class.forName("net.citizensnpcs.api.CitizensAPI");
+            Object reg = api.getMethod("getNPCRegistry").invoke(null);
+            Object npc = reg.getClass().getMethod("getById", int.class).invoke(reg, id);
+            return npc == null ? id + "번 NPC 가 없음 (/npc list 로 번호 확인)" : null;
+        } catch (Throwable t) {
+            return null; // 확인 못 하면 그냥 실행
+        }
+    }
+
+    /** /한글닉 순위적용 — 지금 1등 기준으로 명령어 바로 다시 실행 */
+    String forceFirst() {
+        Entry first = get(1);
+        if (first == null) return "지금 1등이 없어요 (순위가 비어 있음)";
+        List<String> cmds = section().getStringList("on-first-change");
+        if (cmds.isEmpty()) return key + ".on-first-change 가 비어 있어요";
+        String nick = PokiName.stripColor(plugin.nickOf(first.id(), first.name())).trim();
+        lastFirst = first.id() + "|" + first.name() + "|" + nick;
+        runFirstCommands(first, nick, cmds);
+        return null;
+    }
+
+    /** /한글닉 순위확인 — 지금 순위가 어떻게 계산되는지 */
+    List<String> debug() {
+        List<String> out = new ArrayList<>();
+        ConfigurationSection c = section();
+        out.add("&e" + label + " 순위 &7(" + key + ") — " + (task != null ? "&a켜짐" : "&c꺼짐 (enabled 또는 준비 실패 — 콘솔 확인)"));
+        String src = source();
+        if (src != null) out.add("&7읽는 곳: &f" + src);
+        out.add("&7대상 " + lastCount + "명 · " + c.getLong("interval-seconds", 10) + "초마다 · 상위 " + c.getInt("size", 10) + "명 · 0원 숨김 " + c.getBoolean("hide-zero", true));
+        out.add("&7제외: &f" + excludeList());
+        List<Entry> t = top;
+        for (int i = 0; i < Math.min(5, t.size()); i++) {
+            Entry e = t.get(i);
+            out.add("&f" + (i + 1) + "등 &e" + plugin.nickOf(e.id(), e.name()) + " &7(" + e.name() + ") &a" + formatValue(e.value()));
+        }
+        if (t.isEmpty()) out.add("&c순위가 비어 있어요");
+        List<String> cmds = c.getStringList("on-first-change");
+        out.add("&71등 변경 명령어 " + cmds.size() + "개" + (cmds.isEmpty() ? "" : " — 마지막 실행 결과:"));
+        if (!cmds.isEmpty() && lastResults.isEmpty()) out.add("&7  아직 실행 전 (서버 켜고 " + c.getLong("first-change-delay-seconds", 20) + "초 뒤 · Citizens 켜진 뒤)");
+        for (String r : lastResults) out.add("  " + r);
+        return out;
+    }
+
+    /** 값을 어디서 읽는지 (디버그용) */
+    protected String source() {
+        return null;
     }
 
     /** 1부터 시작하는 순위. 없으면 null */

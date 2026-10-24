@@ -207,7 +207,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     }
 
     /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
-    private static final int CONFIG_VERSION = 2;
+    private static final int CONFIG_VERSION = 3;
 
     /**
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
@@ -259,6 +259,14 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             next.add(first.get(0));
             c.set("money-rank.on-first-change", next);
             getLogger().info("config.yml: 소지금 1등 NPC 이름도 바꾸게 명령어 추가 → " + next);
+        }
+        // v3: 소지금 순위가 읽을 돈 플러그인 고르는 자리
+        if (c.isConfigurationSection("money-rank") && !c.contains("money-rank.economy", true)) {
+            c.set("money-rank.economy", "");
+            c.setComments("money-rank.economy", List.of(
+                    "어떤 돈 플러그인 잔액으로 순위를 낼지 (Essentials, CMI …). 비우면 Vault 기본",
+                    "서버에 돈 플러그인이 여러 개면 유저가 실제로 쓰는 쪽을 적기 — /한글닉 순위확인 으로 지금 읽는 곳 확인"));
+            getLogger().info("config.yml: money-rank.economy 자리 추가");
         }
         // v2: 순위 공통 제외 목록 자리 만들기
         if (!c.contains("rank-exclude", true)) {
@@ -447,6 +455,22 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 s.sendMessage(color("&e지금 바이옴"));
                 for (String line : biomeName.debug(p)) s.sendMessage(color("&7- &f" + line));
             }
+            case "순위확인", "rank" -> {
+                boolean cob = a.length > 1 && (a[1].equals("코블달러") || a[1].equalsIgnoreCase("cobble"));
+                Rank r = cob ? cobbleRank : moneyRank;
+                if (r == null) { s.sendMessage(color("&c순위 기능이 없어요.")); return true; }
+                for (String line : r.debug()) s.sendMessage(color(line));
+                s.sendMessage(color("&7코블달러는 &f/" + label + " 순위확인 코블달러 &7· 1등 명령어 다시 실행은 &f/" + label + " 순위적용"));
+            }
+            case "순위적용", "rankapply" -> {
+                boolean cob = a.length > 1 && (a[1].equals("코블달러") || a[1].equalsIgnoreCase("cobble"));
+                Rank r = cob ? cobbleRank : moneyRank;
+                if (r == null) { s.sendMessage(color("&c순위 기능이 없어요.")); return true; }
+                r.refresh();
+                String err = r.forceFirst();
+                if (err != null) { s.sendMessage(color("&c" + err)); return true; }
+                for (String line : r.debug()) s.sendMessage(color(line));
+            }
             case "리로드", "reload" -> {
                 reloadConfig();
                 warnConfigError(s);
@@ -470,6 +494,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         s.sendMessage(color("&e/" + label + " 해제 <마크닉> &7- 한글닉 지우기"));
         s.sendMessage(color("&e/" + label + " 목록 &7- 등록된 한글닉 보기"));
         s.sendMessage(color("&e/" + label + " 바이옴 &7- 지금 바이옴이 어떻게 읽히는지 (한글 이름 확인용)"));
+        s.sendMessage(color("&e/" + label + " 순위확인 [코블달러] &7- 순위가 어떻게 계산되는지·1등 NPC 명령어 결과"));
+        s.sendMessage(color("&e/" + label + " 순위적용 [코블달러] &7- 지금 1등으로 NPC 명령어 바로 다시 실행"));
         s.sendMessage(color("&e/" + label + " 리로드 &7- config.yml 다시 불러오기"));
     }
 
