@@ -21,14 +21,45 @@ final class MoneyRank extends Rank {
         super(plugin, "money-rank", "소지금", "${value}");
     }
 
+    private String econInfo;
+
+    /**
+     * Vault 에 돈 플러그인이 여러 개 등록돼 있으면(Essentials·CMI 등) Vault 가 고른 것과 유저가 쓰는 돈이 다를 수 있음.
+     * config money-rank.economy 에 플러그인 이름(Essentials, CMI …)을 적으면 그걸 씀. 비우면 Vault 기본.
+     */
     @Override
     protected boolean prepare() {
-        if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
-            RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
-            econ = rsp == null ? null : rsp.getProvider();
+        econ = null;
+        econInfo = null;
+        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
+            plugin.getLogger().warning("Vault 가 없어서 소지금 순위를 끕니다.");
+            return false;
         }
-        if (econ == null) plugin.getLogger().warning("Vault 경제 플러그인을 못 찾아서 소지금 순위를 끕니다.");
-        return econ != null;
+        String want = section().getString("economy", "").trim();
+        List<String> names = new ArrayList<>();
+        RegisteredServiceProvider<Economy> pick = null;
+        for (RegisteredServiceProvider<Economy> r : Bukkit.getServicesManager().getRegistrations(Economy.class)) {
+            names.add(r.getPlugin().getName() + "(" + r.getProvider().getName() + ")");
+            if (!want.isEmpty() && pick == null
+                    && (r.getPlugin().getName().equalsIgnoreCase(want) || r.getProvider().getName().equalsIgnoreCase(want))) pick = r;
+        }
+        if (pick == null) {
+            if (!want.isEmpty()) plugin.getLogger().warning("money-rank.economy '" + want + "' 를 못 찾아서 Vault 기본으로 씀. 등록된 것: " + names);
+            pick = Bukkit.getServicesManager().getRegistration(Economy.class);
+        }
+        if (pick == null) {
+            plugin.getLogger().warning("Vault 에 등록된 돈 플러그인이 없어서 소지금 순위를 끕니다.");
+            return false;
+        }
+        econ = pick.getProvider();
+        econInfo = pick.getPlugin().getName() + " (" + econ.getName() + ")" + (names.size() > 1 ? " · 등록된 것 전부: " + names : "");
+        plugin.getLogger().info("소지금 순위가 읽는 돈: " + econInfo);
+        return true;
+    }
+
+    @Override
+    protected String source() {
+        return econInfo == null ? "&c없음" : econInfo;
     }
 
     @Override
