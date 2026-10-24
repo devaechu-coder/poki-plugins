@@ -269,6 +269,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
         org.bukkit.configuration.ConfigurationSection fs = getConfig().getConfigurationSection("hologram.footer");
         if (fs != null) for (String k : fs.getKeys(false)) foot.put(k, fs.getString(k, ""));
         holos.setFooters(foot);
+        holos.setConfig(getConfig().getConfigurationSection("hologram"));
         holos.load();
         // 모드 이벤트 받기 — 1초마다
         rankTasks.add(Bukkit.getScheduler().runTaskTimerAsynchronously(this, inbox::poll, 20L, 20L));
