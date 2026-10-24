@@ -450,7 +450,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 Category c = args.length > 2 ? Category.find(args[2]) : null;
                 if (c == null) { tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간]"); return true; }
                 boolean weekly = args.length > 3 && (args[3].equals("주간") || args[3].equalsIgnoreCase("week"));
-                Holograms.Holo h = holos.add(c, weekly, p.getLocation().add(0, 2.2, 0));
+                Holograms.Holo h = holos.add(c, weekly, p.getLocation().add(0, getConfig().getDouble("hologram.height", 2.2), 0));
                 tell(s, "&a홀로그램 #" + h.id() + " 설치: " + c.title + (h.weekly() ? " (이번 주)" : ""));
             }
             case "목록", "list" -> {
@@ -467,10 +467,10 @@ public final class PokiStats extends JavaPlugin implements Listener {
             case "이동", "move" -> {
                 if (!(s instanceof Player p)) { tell(s, "게임 안에서 써 주세요"); return true; }
                 int id = args.length > 2 ? parse(args[2]) : -1;
-                tell(s, holos.move(id, p.getLocation().add(0, 2.2, 0)) ? "&a#" + id + " 을 여기로 옮겼어요" : "&c그 번호의 홀로그램이 없어요");
+                tell(s, holos.move(id, p.getLocation().add(0, getConfig().getDouble("hologram.height", 2.2), 0)) ? "&a#" + id + " 을 여기로 옮겼어요" : "&c그 번호의 홀로그램이 없어요");
             }
             default -> {
-                tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간] &7— 서 있는 자리 위에 TOP " + getConfig().getInt("hologram.size", 3));
+                tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간] &7— 발 위치에서 " + getConfig().getDouble("hologram.height", 2.2) + "칸 위가 맨 아랫줄, TOP " + getConfig().getInt("hologram.size", 3));
                 tell(s, "/명예의전당 홀로그램 목록 · 삭제 <번호> · 이동 <번호>");
             }
         }
