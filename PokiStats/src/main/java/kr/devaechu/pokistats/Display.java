@@ -53,6 +53,13 @@ final class Display {
         return name;
     }
 
+    /** 서버 닉네임(PokiName 한글닉) 그대로 — 없으면 "" (마크닉으로 대신하지 않음) */
+    static String rawNick(String name) {
+        if (name == null) return "";
+        String n = nick(name);
+        return n == null || n.equals(name) || n.equals("?") ? "" : n.trim();
+    }
+
     /** 아이콘: 모드 아이템(코블몬 볼 등) → 안 되면 바닐라 */
     static Material icon(Category c) {
         return ICONS.computeIfAbsent(c, k -> {

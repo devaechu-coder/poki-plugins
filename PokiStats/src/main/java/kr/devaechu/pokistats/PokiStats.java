@@ -175,9 +175,12 @@ public final class PokiStats extends JavaPlugin implements Listener {
         Player p = e.getPlayer();
         long now = System.currentTimeMillis();
         sessionStart.put(p.getUniqueId(), now);
+        String nick = Display.rawNick(p.getName());
+        rememberNick(p.getUniqueId().toString(), nick);
         queue.add(Json.event("join", now)
                 .put("uuid", p.getUniqueId().toString())
                 .put("name", p.getName())
+                .put("nick", nick)
                 .put("first", !p.hasPlayedBefore())
                 .put("totalPlayMin", playMinutes(p))
                 .toString());
@@ -195,6 +198,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
         return Json.event("quit", now)
                 .put("uuid", p.getUniqueId().toString())
                 .put("name", p.getName())
+                .put("nick", Display.rawNick(p.getName()))
                 .put("sessionSec", sec)
                 .put("totalPlayMin", playMinutes(p))
                 .put("reason", reason);
@@ -300,6 +304,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
         List<String> names = hiddenNames();
         for (Player p : Bukkit.getOnlinePlayers()) ranks.player(p.getUniqueId().toString(), p.getName(), hidden(p, names));
         syncWebHidden(names);
+        syncNicks();
         ranks.refresh(names,
                 () -> Bukkit.getScheduler().runTask(this, () -> holos.update()));
     }
@@ -361,6 +366,63 @@ public final class PokiStats extends JavaPlugin implements Listener {
         sendHide(p.getUniqueId().toString(), p.getName(), h, h ? (p.hasPermission("pokistats.rank.hidden") ? "perm" : "list") : null);
     }
 
+    // ── 서버 닉네임(한글닉) → 웹 ──
+
+    /** 웹에 마지막으로 보낸 닉: uuid → 닉 ("" = 닉 없음). nick-sent.yml 에 저장 */
+    private final Map<String, String> sentNicks = new ConcurrentHashMap<>();
+    private boolean sentNicksLoaded;
+
+    private void loadSentNicks() {
+        if (sentNicksLoaded) return;
+        sentNicksLoaded = true;
+        org.bukkit.configuration.file.YamlConfiguration y =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new File(getDataFolder(), "nick-sent.yml"));
+        for (String k : y.getKeys(false)) sentNicks.put(k, y.getString(k, ""));
+    }
+
+    private void saveSentNicks() {
+        org.bukkit.configuration.file.YamlConfiguration y = new org.bukkit.configuration.file.YamlConfiguration();
+        sentNicks.forEach(y::set);
+        try {
+            y.save(new File(getDataFolder(), "nick-sent.yml"));
+        } catch (IOException e) {
+            getLogger().warning("nick-sent.yml 저장 실패: " + e);
+        }
+    }
+
+    /** join 에 nick 을 실어 보냈으니 따로 nick 이벤트는 안 보내도 되게 기억만 */
+    private void rememberNick(String uuid, String nick) {
+        loadSentNicks();
+        if (!nick.equals(sentNicks.getOrDefault(uuid, ""))) {
+            sentNicks.put(uuid, nick);
+            saveSentNicks();
+        }
+    }
+
+    /**
+     * 1분마다: 한글닉을 정하거나 바꾸거나 지운 사람만 nick 이벤트 (접속 안 해도).
+     * 처음 켜면 닉이 있는 사람 전부 한 번씩 보냄.
+     */
+    private void syncNicks() {
+        loadSentNicks();
+        boolean changed = false;
+        for (org.bukkit.OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+            if (op.getName() == null) continue;
+            String u = op.getUniqueId().toString();
+            String now = Display.rawNick(op.getName());
+            if (now.equals(sentNicks.getOrDefault(u, ""))) continue;
+            queue.add(Json.event("nick", System.currentTimeMillis())
+                    .put("uuid", u)
+                    .put("name", op.getName())
+                    .put("nick", now)
+                    .toString());
+            if (now.isEmpty()) sentNicks.remove(u);
+            else sentNicks.put(u, now);
+            changed = true;
+        }
+        if (changed) saveSentNicks();
+    }
+
     /** 웹에 "숨김"으로 알린 사람: uuid → 이유(perm = 권한, list = 제외 목록). hidden-sent.yml 에 저장 */
     private final Map<String, String> webHidden = new ConcurrentHashMap<>();
     private boolean webHiddenLoaded;
@@ -388,6 +450,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
         queue.add(Json.event("rank_hide", System.currentTimeMillis())
                 .put("uuid", uuid)
                 .put("name", name)
+                .put("nick", Display.rawNick(name))
                 .put("hidden", hidden)
                 .toString());
         if (hidden) webHidden.put(uuid, reason == null ? "list" : reason);
@@ -437,6 +500,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 first = false;
                 sb.append("{\"uuid\":").append(Json.str(w.uuid()))
                         .append(",\"name\":").append(Json.str(w.name()))
+                        .append(",\"nick\":").append(Json.str(Display.rawNick(w.name())))
                         .append(",\"money\":").append((long) Math.floor(w.money()))
                         .append(",\"coin\":").append((long) Math.floor(w.coin())).append('}');
             }
