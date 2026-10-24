@@ -30,6 +30,12 @@ final class Json {
         return this;
     }
 
+    /** 이미 JSON 인 값 그대로 (배열·객체) */
+    Json putRaw(String k, String json) {
+        fields.put(k, json);
+        return this;
+    }
+
     Json putStrings(String k, Collection<String> vs) {
         StringBuilder sb = new StringBuilder("[");
         boolean first = true;
