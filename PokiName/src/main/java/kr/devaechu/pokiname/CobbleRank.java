@@ -59,6 +59,11 @@ final class CobbleRank extends Rank {
     }
 
     @Override
+    protected String source() {
+        return folder == null ? "&c없음" : folder.getPath() + (liveFailed ? " &c(실시간 값 못 읽음 — 파일 값만)" : " + 접속 중인 사람은 실시간");
+    }
+
+    @Override
     protected List<Entry> collect() {
         Map<UUID, Entry> byId = new HashMap<>();
 
