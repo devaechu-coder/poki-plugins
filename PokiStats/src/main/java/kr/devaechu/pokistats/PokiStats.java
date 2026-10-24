@@ -264,7 +264,11 @@ public final class PokiStats extends JavaPlugin implements Listener {
             }
         }
         wealth.resetEconomy();
-        holos.setSize(getConfig().getInt("hologram.size", 3));
+        holos.setSize(getConfig().getInt("hologram.size", 10));
+        java.util.Map<String, String> foot = new java.util.HashMap<>();
+        org.bukkit.configuration.ConfigurationSection fs = getConfig().getConfigurationSection("hologram.footer");
+        if (fs != null) for (String k : fs.getKeys(false)) foot.put(k, fs.getString(k, ""));
+        holos.setFooters(foot);
         holos.load();
         // 모드 이벤트 받기 — 1초마다
         rankTasks.add(Bukkit.getScheduler().runTaskTimerAsynchronously(this, inbox::poll, 20L, 20L));
@@ -470,7 +474,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 tell(s, holos.move(id, p.getLocation().add(0, getConfig().getDouble("hologram.height", 2.2), 0)) ? "&a#" + id + " 을 여기로 옮겼어요" : "&c그 번호의 홀로그램이 없어요");
             }
             default -> {
-                tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간] &7— 발 위치에서 " + getConfig().getDouble("hologram.height", 2.2) + "칸 위가 맨 아랫줄, TOP " + getConfig().getInt("hologram.size", 3));
+                tell(s, "/명예의전당 홀로그램 설치 <순위종류> [주간] &7— 발 위치에서 " + getConfig().getDouble("hologram.height", 2.2) + "칸 위가 맨 아랫줄, TOP " + getConfig().getInt("hologram.size", 10));
                 tell(s, "/명예의전당 홀로그램 목록 · 삭제 <번호> · 이동 <번호>");
             }
         }

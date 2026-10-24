@@ -41,8 +41,13 @@ wealth:
 
 # 로비 홀로그램 (/명예의전당 홀로그램 설치 <순위종류>)
 hologram:
-  # 몇 등까지 보여줄지
-  size: 3
+  # 몇 등까지 보여줄지 (최대 10)
+  size: 10
+  # 맨 아래 문구 (순위 종류별, 없으면 안 나옴)
+  # 키: capture dex shiny legend battle pvp streak evolve hatch tower raid gym masterball money cobble
+  footer:
+    money: '부자의 자리는 당신의 것일지도!'
+    cobble: '부자의 자리는 당신의 것일지도!'
   # 설치·이동할 때 발 위치에서 몇 칸 위가 맨 아랫줄인지 (글자는 여기서 위로 쌓임)
   # 0 = 서 있는 발 위치가 맨 아랫줄, 2.2 = 머리 바로 위
   height: 2.2
