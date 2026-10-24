@@ -48,7 +48,7 @@
 순위: 포획왕 · 도감왕 · 이로치 사냥꾼 · 전설 수집가 · 배틀왕 · PvP 강자(승률) · 최장 연승 · 진화 마스터 · 부화 장인 · 배틀 타워 최고층 · 레이드 영웅 · 체육관 정복 · 마스터볼 큰손 · 소지금 · 코블달러
 
 - 이번 주 = 한국시간 월요일 0시부터. 같은 값이면 먼저 도달한 사람이 위
-- **운영진 숨기기**: 권한 `pokistats.rank.hidden` (LuckPerms 로 운영진 그룹에) 또는 config `rank.hiddenPlayers` 에 마크닉/uuid, 또는 **PokiName 순위 제외 목록**(`rank-exclude` 등, 한글닉도 됨 — `rank.use-pokiname-exclude: true` 기본). OP 라도 자동으로는 안 숨겨짐. 기록은 쌓이고 표시에서만 빠짐, 웹 순위에서도 빠짐
+- **운영진 숨기기**: 권한 `pokistats.rank.hidden` (LuckPerms 로 운영진 그룹에) 또는 config `rank.hiddenPlayers` 에 마크닉/uuid, 또는 **PokiName 순위 제외 목록**(`rank-exclude` 등, 한글닉도 됨 — `rank.use-pokiname-exclude: true` 기본). OP 라도 자동으로는 안 숨겨짐. 기록은 쌓이고 표시에서만 빠짐, 웹 순위에서도 빠짐 (목록을 바꾸면 1분 안에 웹에도 알림 — 오프라인 계정도)
 - 한글닉: PokiName 이 있으면 한글닉으로 표시
 
 ### PlaceholderAPI
@@ -66,6 +66,7 @@
 
 ## 버전
 
+- 1.1.5 — 운영진 숨김이 바뀌면 접속 안 해도 1분 안에 웹(rank_hide)에 알림 (오프라인 계정 포함, hidden-sent.yml)
 - 1.1.4 — 홀로그램 글자를 config `hologram.format` 으로 직접 정하기 (제목·등수 줄·빈 줄·아래 줄, 순위별 `hologram.formats.<종류>` 덮어쓰기)
 - 1.1.3 — 명예의 전당 홀로그램을 로비 소지금 판 모양으로 (✦ 포키 ○○ 랭킹 ✦ · 메달 ①②③ · ◆ · 구분선 · 문구 `hologram.footer`), 기본 TOP 10, 배경 없음
 - 1.1.2 — 홀로그램 높이 설정 `hologram.height` (0 = 발 위치가 맨 아랫줄)

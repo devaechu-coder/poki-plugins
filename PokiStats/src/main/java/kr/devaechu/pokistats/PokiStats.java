@@ -299,6 +299,7 @@ public final class PokiStats extends JavaPlugin implements Listener {
     private void refreshRanks() {
         List<String> names = hiddenNames();
         for (Player p : Bukkit.getOnlinePlayers()) ranks.player(p.getUniqueId().toString(), p.getName(), hidden(p, names));
+        syncWebHidden(names);
         ranks.refresh(names,
                 () -> Bukkit.getScheduler().runTask(this, () -> holos.update()));
     }
@@ -357,11 +358,67 @@ public final class PokiStats extends JavaPlugin implements Listener {
     private void rankHide(Player p) {
         boolean h = hidden(p);
         if (ranks != null) ranks.player(p.getUniqueId().toString(), p.getName(), h);
+        sendHide(p.getUniqueId().toString(), p.getName(), h, h ? (p.hasPermission("pokistats.rank.hidden") ? "perm" : "list") : null);
+    }
+
+    /** 웹에 "숨김"으로 알린 사람: uuid → 이유(perm = 권한, list = 제외 목록). hidden-sent.yml 에 저장 */
+    private final Map<String, String> webHidden = new ConcurrentHashMap<>();
+    private boolean webHiddenLoaded;
+
+    private void loadWebHidden() {
+        if (webHiddenLoaded) return;
+        webHiddenLoaded = true;
+        org.bukkit.configuration.file.YamlConfiguration y =
+                org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(new File(getDataFolder(), "hidden-sent.yml"));
+        for (String k : y.getKeys(false)) webHidden.put(k, y.getString(k, "list"));
+    }
+
+    private void saveWebHidden() {
+        org.bukkit.configuration.file.YamlConfiguration y = new org.bukkit.configuration.file.YamlConfiguration();
+        webHidden.forEach(y::set);
+        try {
+            y.save(new File(getDataFolder(), "hidden-sent.yml"));
+        } catch (IOException e) {
+            getLogger().warning("hidden-sent.yml 저장 실패: " + e);
+        }
+    }
+
+    private void sendHide(String uuid, String name, boolean hidden, String reason) {
+        loadWebHidden();
         queue.add(Json.event("rank_hide", System.currentTimeMillis())
-                .put("uuid", p.getUniqueId().toString())
-                .put("name", p.getName())
-                .put("hidden", h)
+                .put("uuid", uuid)
+                .put("name", name)
+                .put("hidden", hidden)
                 .toString());
+        if (hidden) webHidden.put(uuid, reason == null ? "list" : reason);
+        else webHidden.remove(uuid);
+        saveWebHidden();
+    }
+
+    /**
+     * 숨김 상태가 바뀐 사람만 웹에 바로 알림 — 접속 안 해도.
+     * - 제외 목록(rank.hiddenPlayers · PokiName rank-exclude 등)에 새로 들어간 오프라인 계정 → hidden:true
+     * - 목록에서 빠진 오프라인 계정 → hidden:false (권한으로 숨긴 사람은 오프라인에선 권한을 몰라서 그대로 둠)
+     * - 접속 중인 사람은 권한까지 보고 정확히
+     */
+    private void syncWebHidden(List<String> names) {
+        loadWebHidden();
+        java.util.Set<String> lower = new java.util.HashSet<>();
+        for (String n : names) lower.add(n.toLowerCase(java.util.Locale.ROOT));
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            String u = p.getUniqueId().toString();
+            boolean h = hidden(p, names);
+            if (h != webHidden.containsKey(u))
+                sendHide(u, p.getName(), h, h ? (p.hasPermission("pokistats.rank.hidden") ? "perm" : "list") : null);
+        }
+        for (org.bukkit.OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+            if (op.isOnline() || op.getName() == null) continue;
+            String u = op.getUniqueId().toString();
+            boolean listed = lower.contains(op.getName().toLowerCase(java.util.Locale.ROOT)) || lower.contains(u);
+            String was = webHidden.get(u);
+            if (listed && was == null) sendHide(u, op.getName(), true, "list");
+            else if (!listed && "list".equals(was)) sendHide(u, op.getName(), false, null);
+        }
     }
 
     /** 메인 스레드: 전원 잔액 → 로컬 순위, 일부(접속자 + 상위 100씩) → 통계 서버 wealth */
