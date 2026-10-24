@@ -43,7 +43,7 @@ final class Holograms {
     private final Ranks ranks;
     private final List<Holo> holos = new ArrayList<>();
     private final Map<Integer, UUID> entities = new HashMap<>();
-    private int size = 3;
+    private int size = 10;
 
     Holograms(File file, Ranks ranks, Logger log) {
         this.file = file;
@@ -143,29 +143,52 @@ final class Holograms {
                 d.setPersistent(false);
                 d.addScoreboardTag(TAG);
                 d.setBillboard(Billboard.CENTER);
-                d.setLineWidth(400);
+                d.setLineWidth(1000);
                 d.setShadowed(true);
-                d.setBackgroundColor(Color.fromARGB(96, 0, 0, 0));
+                d.setBackgroundColor(Color.fromARGB(0, 0, 0, 0)); // 배경 없이 (소지금 판처럼)
                 d.setText(text);
             });
             entities.put(h.id(), td.getUniqueId());
         }
     }
 
+    /** 로비 소지금 판(money-top)과 같은 모양 — 제목 · 줄 · 1~3위 메달 · 4위부터 ◆ · 줄 · 문구 */
+    private static final String[] MEDAL = {"&#FFD166&l①", "&#C9D6E8&l②", "&#D99A72&l③"};
+    private static final String[] RANK_COLOR = {"&#FFF2CC", "&#F2F6FC", "&#FFF0E6"};
+    private static final String BAR = "&#78DFFF&m                                                  ";
+
     private String text(Holo h, Ranks.Snapshot s) {
         Category c = h.cat();
         List<RankDb.Row> rows = s.get(c, h.weekly());
         StringBuilder sb = new StringBuilder();
-        sb.append("&6&l✦ ").append(c.title).append(" TOP ").append(size).append(" ✦");
-        if (c.hasWeekly()) sb.append(h.weekly() ? "\n&7이번 주" : "\n&7전체");
+        sb.append("&#7CFFB2&l✦ &#7CFFB2&l포키 ").append(c.title).append(" &#FFD166&l랭킹 &#7CFFB2&l✦");
+        if (c.hasWeekly() && h.weekly()) sb.append("\n&#B8C7D9이번 주");
+        sb.append('\n').append(BAR);
         for (int i = 1; i <= size; i++) {
             RankDb.Row r = Display.at(rows, i);
-            String medal = i == 1 ? "&6" : i == 2 ? "&f" : i == 3 ? "&c" : "&e";
-            sb.append('\n').append(medal).append(i).append("위 ");
-            if (r == null) sb.append("&8-");
-            else sb.append("&f").append(Display.nick(r.name())).append(" &7· &a").append(c.format(r.value()));
+            String medal = i <= 3 ? MEDAL[i - 1] : "&#8FA8C7&l◆";
+            String base = i <= 3 ? RANK_COLOR[i - 1] : "&#E3ECF8";
+            sb.append('\n').append(medal).append("&r ").append(base).append(i).append("등 : ");
+            if (r == null) sb.append("&7-");
+            else sb.append("&e").append(Display.nick(r.name())).append(" &f/ &a").append(c.format(r.value()));
         }
+        sb.append('\n').append(BAR);
+        String foot = footer(c);
+        if (!foot.isBlank()) sb.append('\n').append(foot);
         return Display.color(sb.toString());
+    }
+
+    private final java.util.Map<String, String> footers = new java.util.HashMap<>();
+
+    void setFooters(java.util.Map<String, String> m) {
+        footers.clear();
+        footers.putAll(m);
+    }
+
+    private String footer(Category c) {
+        String f = footers.get(c.key);
+        if (f == null) f = footers.get(c.title.replace(" ", ""));
+        return f == null || f.isBlank() ? "" : "&#B8C7D9&o" + f;
     }
 
     private void kill(int id) {

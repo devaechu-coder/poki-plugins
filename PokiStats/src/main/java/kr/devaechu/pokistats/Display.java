@@ -20,8 +20,24 @@ final class Display {
 
     private Display() { }
 
+    private static final java.util.regex.Pattern HEX = java.util.regex.Pattern.compile("&#([0-9a-fA-F]{6})");
+
+    /** &색 코드 + &#RRGGBB 헥스 색 */
     static String color(String s) {
-        return ChatColor.translateAlternateColorCodes('&', s == null ? "" : s);
+        if (s == null) return "";
+        java.util.regex.Matcher m = HEX.matcher(s);
+        StringBuilder sb = new StringBuilder();
+        while (m.find()) {
+            String rep;
+            try {
+                rep = net.md_5.bungee.api.ChatColor.of("#" + m.group(1)).toString();
+            } catch (Throwable t) {
+                rep = "";
+            }
+            m.appendReplacement(sb, java.util.regex.Matcher.quoteReplacement(rep));
+        }
+        m.appendTail(sb);
+        return ChatColor.translateAlternateColorCodes('&', sb.toString());
     }
 
     /** PokiName 이 있으면 한글닉 (%pokiname_nick_<마크닉>%), 없으면 마크닉 */
