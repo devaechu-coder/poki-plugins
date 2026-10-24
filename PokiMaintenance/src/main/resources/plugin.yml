@@ -1,0 +1,20 @@
+name: PokiMaintenance
+version: ${project.version}
+main: kr.devaechu.pokimaintenance.PokiMaintenance
+api-version: '1.21'
+author: DevAechu
+description: 포키 서버 점검 모드 — 점검 중엔 운영진만 접속
+softdepend: [LuckPerms]
+commands:
+  maintenance:
+    description: 점검 모드 켜기/끄기
+    usage: /점검 <시작 [종료 예정]|끝|상태|리로드>
+    aliases: [점검]
+    permission: poki.maintenance.admin
+permissions:
+  poki.maintenance.admin:
+    description: 점검 모드 켜고 끄기
+    default: op
+  poki.maintenance.bypass:
+    description: 점검 중에도 접속 가능 (운영진)
+    default: op

@@ -8,6 +8,7 @@
 | [PokiLinks](PokiLinks/) | `/위키`, `/런처` 같은 클릭 바로가기 링크 |
 | [PokiDonate](PokiDonate/) | 치지직 후원 연동 · 후원 장부 (`/후원`) |
 | [PokiStats](PokiStats/) | 운영 통계 — 동접 · 접속 기록 · 후원 통계를 통계 서버로 전송 (`/통계`, OP) |
+| [PokiMaintenance](PokiMaintenance/) | 점검 모드 — 점검 중엔 운영진만 접속 (`/점검 시작 22:00`, `/점검 끝`), 런처에 점검 표시 |
 
 각 폴더에서 `mvn package` 로 빌드.
 

@@ -1,0 +1,29 @@
+# 포키 서버 점검 모드
+# 점검 중엔 운영진(권한 poki.maintenance.bypass, 또는 아래 staff 목록, 또는 OP)만 접속 가능
+# 바꾼 뒤 /점검 리로드
+
+# 권한 대신 이름으로 운영진 지정 (마크닉, 대소문자 무관). LuckPerms 운영진 그룹에 poki.maintenance.bypass 를 주는 걸 추천
+staff: []
+
+# 접속 막을 때 보여줄 문구 ({until} 종료 예정 시간, 없으면 until-unknown 문구)
+kick-message:
+  - '&c&l[ 포키 서버 점검 중 ]'
+  - ''
+  - '&f지금은 서버 점검 중이에요.'
+  - '&f{until}'
+  - ''
+  - '&7조금만 기다려주세요!'
+until-format: '&e{until} &f종료 예정'
+until-unknown: '&f점검이 끝나면 다시 들어올 수 있어요.'
+
+# 서버 목록(멀티플레이 화면) 문구 — 런처가 "[점검 중]" 글자로 점검을 알아챔. 이 글자는 지우지 말기
+motd:
+  - '&c&l[점검 중] &f포키 서버'
+  - '&7{until}'
+motd-until-format: '{until} 종료 예정'
+motd-until-unknown: '잠시 후 다시 열려요'
+
+# 점검 시작할 때 접속 중인 일반 유저에게 보내는 문구 (내보내기 전)
+broadcast-start: '&c[점검] &f서버 점검을 시작해요. 잠시 후 접속이 끊겨요!'
+# 내보내기 전 기다리는 시간 (초)
+kick-delay-seconds: 10
