@@ -48,10 +48,10 @@ User-Agent: PokiStats/1.0.0
 → 시간대별 동접 그래프, 최고 동접. `players` 로 quit 이 빠진 세션 보정 가능
 
 ### `join` — 접속
-`uuid`, `name`(마크 닉), `first`(이 서버에 처음 들어옴), `totalPlayMin`(마크 누적 플레이 분, 플러그인 넣기 전 포함, 못 읽으면 -1)
+`uuid`, `name`(마크 닉), `nick`(서버 닉네임·한글닉, 없으면 `""`), `first`(이 서버에 처음 들어옴), `totalPlayMin`(마크 누적 플레이 분, 플러그인 넣기 전 포함, 못 읽으면 -1)
 
 ### `quit` — 퇴장
-`uuid`, `name`, `sessionSec`(이번 접속 시간), `totalPlayMin`, `reason`(`quit` / `shutdown`)
+`uuid`, `name`, `nick`, `sessionSec`(이번 접속 시간), `totalPlayMin`, `reason`(`quit` / `shutdown`)
 
 ### `donate` — 후원 (PokiDonate 장부)
 `donationId`(장부 번호), `amount`(원), `status`, `note`, `type`(CHAT/VIDEO), `test`, `channelId`, `streamerUuid`, `streamerName`
@@ -74,7 +74,8 @@ User-Agent: PokiStats/1.0.0
 | `gym` | `uuid, trainerId`(kanto_brock … kanto_league_lance, kanto_champion_blue)`, result`(win/lose/quit) |
 | `tower` | `uuid, floor, streak, result`(win/lose/forfeit) |
 | `raid` | `uuid, boss, result`(win/lose) |
-| `rank_hide` | `uuid, name, hidden` — 접속할 때마다 |
-| `wealth` | `players: [{uuid, name, money, coin}]` — money = 소지금($), coin = 코블달러(C). 10분마다 + 종료 시, 접속자 + 소지금·코블달러 상위 100 |
+| `rank_hide` | `uuid, name, nick, hidden` — 접속할 때 + 숨김 상태가 바뀔 때 (오프라인 포함) |
+| `nick` | `uuid, name, nick` — 서버 닉네임(PokiName 한글닉)을 정하거나 바꾸거나 지울 때(`""`), 1분 안에. 접속할 때는 `join` 의 `nick` 으로 대신 |
+| `wealth` | `players: [{uuid, name, nick, money, coin}]` — money = 소지금($), coin = 코블달러(C). 10분마다 + 종료 시, 접속자 + 소지금·코블달러 상위 100 |
 
 모르는 `t` 는 저장만 하거나 무시하고 2xx 로 받아주기.

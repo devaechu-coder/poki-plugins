@@ -66,6 +66,7 @@
 
 ## 버전
 
+- 1.1.6 — 서버 닉네임(한글닉)을 웹으로: join·quit·rank_hide·wealth 에 nick, 닉을 정하거나 바꾸거나 지우면 1분 안에 nick 이벤트 (nick-sent.yml)
 - 1.1.5 — 운영진 숨김이 바뀌면 접속 안 해도 1분 안에 웹(rank_hide)에 알림 (오프라인 계정 포함, hidden-sent.yml)
 - 1.1.4 — 홀로그램 글자를 config `hologram.format` 으로 직접 정하기 (제목·등수 줄·빈 줄·아래 줄, 순위별 `hologram.formats.<종류>` 덮어쓰기)
 - 1.1.3 — 명예의 전당 홀로그램을 로비 소지금 판 모양으로 (✦ 포키 ○○ 랭킹 ✦ · 메달 ①②③ · ◆ · 구분선 · 문구 `hologram.footer`), 기본 TOP 10, 배경 없음
