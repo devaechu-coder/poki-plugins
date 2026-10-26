@@ -1,6 +1,10 @@
 {
   "providers": [
     {
+      "type": "reference",
+      "id": "pokiui:ui"
+    },
+    {
       "type": "bitmap",
       "file": "poki:font/titles/t01.png",
       "height": 18,

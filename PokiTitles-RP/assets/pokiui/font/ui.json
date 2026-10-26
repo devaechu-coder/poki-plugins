@@ -1,0 +1,932 @@
+{
+  "providers": [
+    {
+      "type": "space",
+      "advances": {
+        "\uea00": -16,
+        "\uea01": -177,
+        "\uea02": -193,
+        "\uea03": -1,
+        "\uea04": -192
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_0_0.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb00"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_0_1.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb01"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_0_2.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb02"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_1_0.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb03"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_1_1.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb04"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_1_2.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb05"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_2_0.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb06"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_2_1.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb07"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_pink_2_2.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb08"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_0_0.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb09"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_0_1.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb0a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_0_2.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb0b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_1_0.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb0c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_1_1.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb0d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_1_2.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb0e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_2_0.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb0f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_2_1.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb10"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_2_2.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb11"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_3_0.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb12"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_3_1.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb13"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_pink_3_2.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb14"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_0_0.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb15"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_0_1.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb16"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_0_2.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb17"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_1_0.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb18"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_1_1.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb19"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_1_2.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb1a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_2_0.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb1b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_2_1.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb1c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_2_2.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb1d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_3_0.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb1e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_3_1.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb1f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_blue_3_2.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb20"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_0_0.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb21"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_0_1.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb22"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_0_2.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ueb23"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_1_0.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb24"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_1_1.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb25"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_1_2.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ueb26"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_2_0.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb27"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_2_1.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb28"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_2_2.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ueb29"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_3_0.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb2a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_3_1.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb2b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_6_purple_3_2.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ueb2c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_0_0.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb2d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_0_1.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb2e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_0_2.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb2f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_1_0.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb30"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_1_1.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb31"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_1_2.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb32"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_2_0.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb33"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_2_1.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb34"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_purple_2_2.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb35"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_0_0.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb36"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_0_1.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb37"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_0_2.png",
+      "height": 59,
+      "ascent": 13,
+      "chars": [
+        "\ueb38"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_1_0.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb39"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_1_1.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb3a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_1_2.png",
+      "height": 59,
+      "ascent": -46,
+      "chars": [
+        "\ueb3b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_2_0.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb3c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_2_1.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb3d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/body_3_green_2_2.png",
+      "height": 60,
+      "ascent": -105,
+      "chars": [
+        "\ueb3e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_main_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb3f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_main_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb40"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_main_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb41"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_exchange_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb42"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_exchange_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb43"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_exchange_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb44"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_market_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb45"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_market_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb46"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_market_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb47"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_confirm_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb48"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_confirm_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb49"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_confirm_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_wild_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_wild_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_wild_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_own_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_own_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb4f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_own_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb50"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_expired_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb51"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_expired_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb52"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_expired_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb53"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_category_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb54"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_category_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb55"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_category_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb56"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_retrieve_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb57"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_retrieve_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb58"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_retrieve_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb59"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_admin_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb5a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_admin_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb5b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_admin_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ueb5c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_0.png",
+      "height": 47,
+      "ascent": 47,
+      "chars": [
+        "\ueb5d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_1.png",
+      "height": 47,
+      "ascent": 47,
+      "chars": [
+        "\ueb5e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_2.png",
+      "height": 47,
+      "ascent": 47,
+      "chars": [
+        "\ueb5f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_0.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb60"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_1.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb61"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_2.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb62"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/player.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [
+        "\ueb63"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/location.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [
+        "\ueb64"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/server.png",
+      "height": 8,
+      "ascent": 7,
+      "chars": [
+        "\ueb65"
+      ]
+    }
+  ]
+}
