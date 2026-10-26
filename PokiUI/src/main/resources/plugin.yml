@@ -1,0 +1,17 @@
+name: PokiUI
+version: 1.0.0
+main: kr.devaechu.pokiui.PokiUI
+api-version: '1.21'
+author: DevAechu
+softdepend: [SimpleShopJS]
+description: 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈
+commands:
+  pokiui:
+    description: PokiUI 설정 다시 읽기
+    usage: /포키ui 리로드
+    aliases: [포키ui]
+    permission: pokiui.admin
+permissions:
+  pokiui.admin:
+    description: PokiUI 리로드
+    default: op

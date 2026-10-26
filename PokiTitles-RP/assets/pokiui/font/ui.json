@@ -849,60 +849,6 @@
     },
     {
       "type": "bitmap",
-      "file": "pokiui:font/score_header_0_0.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5d"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/score_header_0_1.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5e"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/score_header_0_2.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5f"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_0.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb60"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_1.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb61"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_2.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb62"
-      ]
-    },
-    {
-      "type": "bitmap",
       "file": "pokiui:font/player.png",
       "height": 8,
       "ascent": 7,
@@ -926,6 +872,231 @@
       "ascent": 7,
       "chars": [
         "\ueb65"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_0.png",
+      "height": 38,
+      "ascent": 38,
+      "chars": [
+        "\ueb5d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_1.png",
+      "height": 38,
+      "ascent": 38,
+      "chars": [
+        "\ueb5e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_0.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb60"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_1.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb61"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_pokemon_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec00"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_pokemon_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec01"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_pokemon_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec02"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_cobbleverse_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec03"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_cobbleverse_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec04"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_cobbleverse_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec05"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_build_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec06"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_build_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec07"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_build_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec08"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_random_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec09"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_random_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_random_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_farm_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0c"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_farm_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_farm_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ball_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec0f"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ball_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec10"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ball_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec11"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ore_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec12"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ore_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec13"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/header_shop_ore_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\uec14"
       ]
     }
   ]
