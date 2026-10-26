@@ -1,6 +1,6 @@
 # PokiTitles-RP
 
-PokiName 칭호용 배지 이미지 + PokiHelp 문의함 GUI 리소스팩. 마크 1.21.1 (pack_format 34).
+PokiName 칭호용 배지 이미지 + PokiHelp 문의함 GUI + 상점·경매장·스코어보드 꾸미기(포키 UI) 리소스팩. 마크 1.21.1 (pack_format 34).
 
 배지 한 장 = 글자 하나. `assets/minecraft/font/default.json` 에서 `\ue101` ~ `\ue114` 글자를 배지 PNG 로 바꾼다.
 PokiName 이 머리 위 텍스트 디스플레이에 이 글자를 띄우면 배지로 보인다. (리소스팩이 없으면 네모로 보임)
@@ -50,6 +50,16 @@ PokiName 이 머리 위 텍스트 디스플레이에 이 글자를 띄우면 배
 
 다른 리소스팩이 `paper.json` 을 덮어쓰면 아이콘이 그냥 종이로 보임 → 이 팩을 위로 올리기.
 
+## 포키 UI (상점·경매장·스코어보드)
+
+다른 플러그인(CommandMenu 상점·야생, JSTradeShop 코인, Irisauction 유저상점, SimpleScore) 의 config 제목에 그림 글자를 넣어서 꾸미는 것.
+`default.json` 맨 앞의 `{"type":"reference","id":"pokiui:ui"}` 가 `assets/pokiui/font/ui.json` 을 불러온다.
+
+- 원본(GPT 제작)은 768px 짜리 한 장 글자였는데 256px 제한 때문에 조각으로 잘라 `\ueb00`~ 에 넣음
+- 원래 글자 `\uea10`~`\uea52` 하나 = 조각 여러 개를 이어 붙인 문자열 (폭은 원래와 똑같음). 서버 config 제목도 그 문자열로 바꿔서 써야 함
+- 공백: `\uea00` -16, `\uea01` -177, `\uea02` -193, `\uea03` -1 (조각 잇기), `\uea04` -192 (다음 줄)
+- `assets/minecraft/textures/gui/container/generic_54.png` — 6줄 상자 기본 그림을 바꿈 (SimpleShopJS 일반 상점용). **모든 6줄 상자에 적용됨**. 싫으면 이 파일만 지우기
+
 ## 배포
 
 main 에 올리면 GitHub Actions 가 zip 으로 묶고, `VERSION` 이 새로우면 Releases 에 올린다.
@@ -63,5 +73,6 @@ main 에 올리면 GitHub Actions 가 zip 으로 묶고, `VERSION` 이 새로우
 
 ## 버전
 
+- 1.3.0 — 포키 UI (상점·경매장·스코어보드 그림, 6줄 상자 기본 그림)
 - 1.2.0 — 문의함 GUI (배경·헤더·아이콘) 추가
 - 1.1.0 — 칭호 배지 20개
