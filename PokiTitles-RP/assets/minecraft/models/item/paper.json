@@ -1,0 +1,86 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "minecraft:item/paper"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "custom_model_data": 8301
+      },
+      "model": "pokihelp:item/bug"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8302
+      },
+      "model": "pokihelp:item/report"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8303
+      },
+      "model": "pokihelp:item/question"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8304
+      },
+      "model": "pokihelp:item/other"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8305
+      },
+      "model": "pokihelp:item/previous"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8306
+      },
+      "model": "pokihelp:item/next"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8307
+      },
+      "model": "pokihelp:item/filter"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8308
+      },
+      "model": "pokihelp:item/pending"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8309
+      },
+      "model": "pokihelp:item/completed"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8310
+      },
+      "model": "pokihelp:item/close"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8311
+      },
+      "model": "pokihelp:item/page"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8312
+      },
+      "model": "pokihelp:item/refresh"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8313
+      },
+      "model": "pokihelp:item/empty"
+    }
+  ]
+}

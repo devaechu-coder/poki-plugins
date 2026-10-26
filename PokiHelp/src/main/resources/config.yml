@@ -1,0 +1,27 @@
+# PokiHelp 설정 — 고친 뒤 /문의함 리로드
+
+# 운영진 = OP 이거나 아래 권한 중 하나라도 있는 사람 (pokiname.admin = 한글닉 관리자)
+staff-permissions:
+  - pokihelp.staff
+  - pokiname.admin
+
+# 같은 사람이 다시 보낼 수 있을 때까지 (초)
+cooldown-seconds: 60
+# 내용 글자 수
+min-length: 2
+max-length: 200
+# 처리 안 된 문의가 이만큼 있으면 더 못 보냄
+max-open-per-player: 3
+# 처리 완료된 문의를 며칠 뒤에 지울지 (0 = 안 지움)
+keep-done-days: 30
+
+gui:
+  # true = PokiTitles-RP 리소스팩의 꾸민 문의함 (팩 없으면 네모 글자로 보임)
+  # false = 그냥 상자 + 기본 아이템
+  resource-pack: true
+
+notify:
+  # 새 문의가 오면 운영진 화면에 큰 글씨
+  title: true
+  # 효과음 (비우면 안 냄)
+  sound: entity.experience_orb.pickup
