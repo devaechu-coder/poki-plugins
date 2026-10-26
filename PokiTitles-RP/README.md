@@ -60,6 +60,11 @@ PokiName 이 머리 위 텍스트 디스플레이에 이 글자를 띄우면 배
 - 공백: `\uea00` -16, `\uea01` -177, `\uea02` -193, `\uea03` -1 (조각 잇기), `\uea04` -192 (다음 줄)
 - `assets/minecraft/textures/gui/container/generic_54.png` — 6줄 상자 기본 그림을 바꿈 (SimpleShopJS 일반 상점용). **모든 6줄 상자에 적용됨**. 싫으면 이 파일만 지우기
 
+## 배낭 (Sophisticated Backpacks)
+
+`assets/sophisticatedbackpacks/textures/block/` — 크림색 원단 + 분홍 테두리, 등급(기본·구리·철·금·다이아·네더라이트)마다 끈·버클 색만 다름.
+아이템·바닥에 놓은 모습만 바뀜. 등에 멘 모습(entity/backpack.png)은 그대로. 모델·아이템 번호는 안 건드림.
+
 ## 배포
 
 main 에 올리면 GitHub Actions 가 zip 으로 묶고, `VERSION` 이 새로우면 Releases 에 올린다.
@@ -73,6 +78,7 @@ main 에 올리면 GitHub Actions 가 zip 으로 묶고, `VERSION` 이 새로우
 
 ## 버전
 
+- 1.3.2 — 배낭(Sophisticated Backpacks) 포키 색 텍스처
 - 1.3.1 — 스코어보드 로고·구분선 폭 150 → 120 (보드가 덜 넓게), 로고를 GUI 픽셀 격자에 맞추고 글자를 굵게 다시 그림 (뭉개짐 수정), 상점 7개 헤더 (`\uec00`~`\uec14`, SimpleShopJS 제목용)
 - 1.3.0 — 포키 UI (상점·경매장·스코어보드 그림, 6줄 상자 기본 그림)
 - 1.2.0 — 문의함 GUI (배경·헤더·아이콘) 추가
