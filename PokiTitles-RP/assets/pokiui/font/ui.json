@@ -849,60 +849,6 @@
     },
     {
       "type": "bitmap",
-      "file": "pokiui:font/score_header_0_0.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5d"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/score_header_0_1.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5e"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/score_header_0_2.png",
-      "height": 47,
-      "ascent": 47,
-      "chars": [
-        "\ueb5f"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_0.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb60"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_1.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb61"
-      ]
-    },
-    {
-      "type": "bitmap",
-      "file": "pokiui:font/separator_0_2.png",
-      "height": 5,
-      "ascent": 5,
-      "chars": [
-        "\ueb62"
-      ]
-    },
-    {
-      "type": "bitmap",
       "file": "pokiui:font/player.png",
       "height": 8,
       "ascent": 7,
@@ -926,6 +872,42 @@
       "ascent": 7,
       "chars": [
         "\ueb65"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_0.png",
+      "height": 38,
+      "ascent": 38,
+      "chars": [
+        "\ueb5d"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/score_header_0_1.png",
+      "height": 38,
+      "ascent": 38,
+      "chars": [
+        "\ueb5e"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_0.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb60"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokiui:font/separator_0_1.png",
+      "height": 5,
+      "ascent": 5,
+      "chars": [
+        "\ueb61"
       ]
     }
   ]
