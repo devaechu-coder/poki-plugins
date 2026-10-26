@@ -1,0 +1,29 @@
+name: PokiHelp
+version: ${project.version}
+main: kr.devaechu.pokihelp.PokiHelp
+api-version: '1.21'
+author: DevAechu
+softdepend: [PlaceholderAPI, PokiName]
+description: 포키 서버 문의 접수 / 운영진 알림 / 문의함 GUI
+commands:
+  phelp:
+    description: 운영진에게 문의 보내기
+    usage: /문의 [버그|신고|질문|기타] <내용>
+    aliases: [문의]
+    permission: pokihelp.use
+  preport:
+    description: 운영진에게 신고 보내기
+    usage: /신고 <내용>
+    aliases: [신고]
+    permission: pokihelp.use
+  phelpbox:
+    description: 문의함 (운영진)
+    usage: /문의함 [목록|이동|처리|리로드]
+    aliases: [문의함]
+permissions:
+  pokihelp.use:
+    description: 문의 보내기
+    default: true
+  pokihelp.staff:
+    description: 문의함 보기·처리 (config 의 staff-permissions 에 있는 권한이면 다 운영진)
+    default: op

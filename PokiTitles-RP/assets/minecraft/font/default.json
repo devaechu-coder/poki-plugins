@@ -179,6 +179,285 @@
       "chars": [
         "\ue114"
       ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\ue800": -1,
+        "\ue801": -192,
+        "\ue802": -16,
+        "\ue803": 16
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_0_0.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue810"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_0_1.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue811"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_0_2.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue812"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_1_0.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue813"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_1_1.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue814"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_1_2.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue815"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_2_0.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue816"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_2_1.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue817"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_2_2.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue818"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_3_0.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue819"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_3_1.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue81a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/inbox_3_2.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue81b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_0_0.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue820"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_0_1.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue821"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_0_2.png",
+      "height": 58,
+      "ascent": 13,
+      "chars": [
+        "\ue822"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_1_0.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue823"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_1_1.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue824"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_1_2.png",
+      "height": 58,
+      "ascent": -45,
+      "chars": [
+        "\ue825"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_2_0.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue826"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_2_1.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue827"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_2_2.png",
+      "height": 58,
+      "ascent": -103,
+      "chars": [
+        "\ue828"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_3_0.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue829"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_3_1.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue82a"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/completed_3_2.png",
+      "height": 58,
+      "ascent": -161,
+      "chars": [
+        "\ue82b"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_inbox_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue830"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_inbox_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue831"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_inbox_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue832"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_completed_0_0.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue840"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_completed_0_1.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue841"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "pokihelp:font/header_completed_0_2.png",
+      "height": 60,
+      "ascent": 57,
+      "chars": [
+        "\ue842"
+      ]
     }
   ]
 }
