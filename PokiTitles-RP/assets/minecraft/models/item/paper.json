@@ -81,6 +81,12 @@
         "custom_model_data": 8313
       },
       "model": "pokihelp:item/empty"
+    },
+    {
+      "predicate": {
+        "custom_model_data": 8401
+      },
+      "model": "poki:item/pokinyang"
     }
   ]
 }
