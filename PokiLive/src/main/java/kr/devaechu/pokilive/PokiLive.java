@@ -223,36 +223,19 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             getConfig().set("tvs", tvs); saveConfig();
             return true;
         }
-        if (sub.equals("치지직") || sub.equals("다시보기") || sub.equals("클립")) {
+        if (sub.equals("틀기")) {
+            if (a.length < 2) { msg(s, "/공연 틀기 <링크>  — 치지직 라이브·다시보기·클립 링크는 알아서 구분, 그 밖의 영상 주소는 그대로 틀기"); return true; }
+            String link = a[1];
+            String kind = link.contains("/clips/") ? "클립" : link.contains("/video/") ? "다시보기"
+                    : (link.contains("chzzk.naver.com") && !channelId(link).isEmpty()) ? "치지직" : null;
+            if (kind != null) return startPlay(s, kind, link);
             if (tvs().isEmpty()) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
-            String arg = a.length > 1 ? a[1] : (sub.equals("치지직") ? getConfig().getString("chzzk.channel", "") : "");
-            if (arg.equals("끄기")) { tvOff(s); return true; }
-            String what; java.util.concurrent.Callable<String> job;
-            if (sub.equals("치지직")) {
-                String id = channelId(arg);
-                if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
-                what = "치지직 라이브"; job = () -> fetchHls(id);
-            } else if (sub.equals("다시보기")) {
-                String no = videoNo(arg);
-                if (no.isEmpty()) { msg(s, "/공연 다시보기 <다시보기 링크 또는 영상 번호>  (chzzk.naver.com/video/숫자)"); return true; }
-                what = "다시보기"; job = () -> fetchVod(no);
-            } else {
-                String uid = clipId(arg);
-                if (uid.isEmpty()) { msg(s, "/공연 클립 <클립 링크 또는 클립 ID>  (chzzk.naver.com/clips/...)"); return true; }
-                what = "클립"; job = () -> fetchClip(uid);
-            }
-            msg(s, what + " 주소 가져오는 중...");
-            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
-                String url = null, err = null;
-                try { url = job.call(); } catch (Exception e) { err = e.getMessage(); }
-                final String fu = url, fe = err;
-                Bukkit.getScheduler().runTask(this, () -> {
-                    if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
-                    playOnTv(s, fu, what);
-                });
-            });
+            if (!link.startsWith("http")) { msg(s, "&c링크는 http 로 시작해야 해"); return true; }
+            playOnTv(s, link, "영상");
             return true;
         }
+        if (sub.equals("치지직") || sub.equals("다시보기") || sub.equals("클립"))
+            return startPlay(s, sub, a.length > 1 ? a[1] : (sub.equals("치지직") ? getConfig().getString("chzzk.channel", "") : ""));
         if (sub.equals("리모컨")) {
             if (s instanceof Player p) p.openInventory(new Remote().inv);
             return true;
@@ -287,6 +270,38 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         }
         return true;
     }
+
+
+    /** 치지직 라이브·다시보기·클립 주소를 받아서 등록된 TV 에 틀기 */
+    private boolean startPlay(CommandSender s, String sub, String arg) {
+            if (tvs().isEmpty()) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
+            if (arg.equals("끄기")) { tvOff(s); return true; }
+            String what; java.util.concurrent.Callable<String> job;
+            if (sub.equals("치지직")) {
+                String id = channelId(arg);
+                if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
+                what = "치지직 라이브"; job = () -> fetchHls(id);
+            } else if (sub.equals("다시보기")) {
+                String no = videoNo(arg);
+                if (no.isEmpty()) { msg(s, "/공연 다시보기 <다시보기 링크 또는 영상 번호>  (chzzk.naver.com/video/숫자)"); return true; }
+                what = "다시보기"; job = () -> fetchVod(no);
+            } else {
+                String uid = clipId(arg);
+                if (uid.isEmpty()) { msg(s, "/공연 클립 <클립 링크 또는 클립 ID>  (chzzk.naver.com/clips/...)"); return true; }
+                what = "클립"; job = () -> fetchClip(uid);
+            }
+            msg(s, what + " 주소 가져오는 중...");
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                String url = null, err = null;
+                try { url = job.call(); } catch (Exception e) { err = e.getMessage(); }
+                final String fu = url, fe = err;
+                Bukkit.getScheduler().runTask(this, () -> {
+                    if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
+                    playOnTv(s, fu, what);
+                });
+            });
+            return true;
+            }
 
     // ───────── 치지직 → WATERFrAMES TV ─────────
     static String channelId(String arg) {
@@ -482,13 +497,14 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&e/공연 문구 <내용|끄기> &f/ &e/공연 조명 <" + String.join("|", LIGHTS) + "|끄기>");
         msg(s, "&e/공연 스포트 [닉|끄기] &f/ &e/공연 멈춤");
         msg(s, "&e/공연 티비 [목록|삭제|끄기] &f— 영상 프레임(TV) 보고 치면 등록 (여러 대 가능)");
-        msg(s, "&e/공연 치지직 [채널ID] &f/ &e/공연 다시보기 <링크> &f/ &e/공연 클립 <링크> &f— 등록된 TV 전부에 틀기");
+        msg(s, "&e/공연 틀기 <링크> &f— 치지직 라이브·다시보기·클립·영상 주소 아무거나 (등록된 TV 전부)");
+        msg(s, "&e/공연 치지직 [채널ID] &f/ &e/공연 다시보기 <링크> &f/ &e/공연 클립 <링크> &f/ &e/공연 치지직 끄기");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
         List<String> opts;
-        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "치지직", "다시보기", "클립", "리로드");
+        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "틀기", "치지직", "다시보기", "클립", "리로드");
         else if (a.length == 2) opts = switch (a[0]) {
             case "불꽃" -> FW;
             case "조명" -> concat(LIGHTS, "끄기");
