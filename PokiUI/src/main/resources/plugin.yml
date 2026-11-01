@@ -1,10 +1,10 @@
 name: PokiUI
-version: 1.0.0
+version: 1.1.0
 main: kr.devaechu.pokiui.PokiUI
 api-version: '1.21'
 author: DevAechu
 softdepend: [SimpleShopJS]
-description: 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈
+description: 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈 + 포키 롤리팝 배부르면 못 먹게
 commands:
   pokiui:
     description: PokiUI 설정 다시 읽기

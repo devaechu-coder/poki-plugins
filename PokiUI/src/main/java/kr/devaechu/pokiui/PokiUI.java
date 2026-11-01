@@ -31,6 +31,9 @@ public final class PokiUI extends JavaPlugin implements Listener {
         saveDefaultConfig();
         load();
         getServer().getPluginManager().registerEvents(this, this);
+        // 포키 롤리팝: 배부르면 못 먹게 (PokiDonate 가 없어도 동작하도록 여기에도 둠)
+        if (getServer().getPluginManager().getPlugin("PokiDonate") == null)
+            getServer().getPluginManager().registerEvents(new LollipopGuard(), this);
     }
 
     private void load() {
