@@ -402,7 +402,8 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
 
     private void playOnTv(CommandSender s, String url, String what) {
         boolean ok = tvCommand("url " + url);
-        tvData("{loop:0b}");     // 반복 끄기 (라이브를 짧은 영상으로 착각해서 앞으로 되감는 것 방지)
+        // 라이브는 반복 끄기 (짧은 영상으로 착각해서 앞으로 되감는 것 방지), 클립·다시보기는 계속 반복
+        tvData(what.contains("라이브") ? "{loop:0b}" : "{loop:1b}");
         tvCommand("alpha 255");
         tvCommand("pause false");
         if (ok) {
