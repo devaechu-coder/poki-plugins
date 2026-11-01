@@ -33,6 +33,11 @@ audience:
   height-min: 1
   height-max: 7
 
+# 스포트라이트 빛기둥 진하기 (0~255, 클수록 진함)
+spotlight:
+  outer-alpha: 28
+  inner-alpha: 38
+
 messages:
   prefix: "&d[공연] &f"
   opening-subtitle: "&bPOKI LIVE"
