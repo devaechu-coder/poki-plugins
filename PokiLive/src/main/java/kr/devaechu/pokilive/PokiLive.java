@@ -402,6 +402,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
 
     private void playOnTv(CommandSender s, String url, String what) {
         boolean ok = tvCommand("url " + url);
+        tvData("{loop:0b}");     // 반복 끄기 (라이브를 짧은 영상으로 착각해서 앞으로 되감는 것 방지)
         tvCommand("alpha 255");
         tvCommand("pause false");
         if (ok) {
@@ -436,6 +437,20 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             c.set("tv", null); c.set("tvs", out); saveConfig();
         }
         return out;
+    }
+
+    /** 등록된 TV 블록 데이터 직접 수정 (waterframes 명령에 없는 설정용, 예: 반복). */
+    private void tvData(String nbt) {
+        for (String t : tvs()) {
+            String[] k = t.split(";");
+            if (k.length < 4) continue;
+            World w = Bukkit.getWorld(k[0]);
+            if (w == null) continue;
+            String cmd = "data merge block " + k[1] + " " + k[2] + " " + k[3] + " " + nbt;
+            if (!w.equals(Bukkit.getWorlds().get(0))) cmd = "execute in " + w.getKey() + " run " + cmd;
+            try { Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd); }
+            catch (Exception e) { getLogger().warning("TV 데이터 수정 실패 (" + t + "): " + e.getMessage()); }
+        }
     }
 
     /** 등록된 TV 전부에 /waterframes edit 명령을 콘솔로 보냄. 하나라도 되면 true. */
