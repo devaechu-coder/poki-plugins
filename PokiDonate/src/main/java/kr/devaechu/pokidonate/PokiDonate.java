@@ -76,6 +76,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
 
         for (Player p : Bukkit.getOnlinePlayers()) online.add(p.getUniqueId());
         Bukkit.getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(new LollipopGuard(), this);
 
         DonateCommand cmd = new DonateCommand(this);
         var command = getCommand("donate");

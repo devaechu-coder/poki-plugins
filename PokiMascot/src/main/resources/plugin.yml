@@ -1,0 +1,16 @@
+name: PokiMascot
+version: 1.0.0
+main: kr.devaechu.pokimascot.PokiMascot
+api-version: '1.21'
+author: DevAechu
+description: 포키냥 마스코트 (리소스팩 3D 모델) 세우기 + 우클릭 안내
+commands:
+  pokinyang:
+    description: 포키냥 마스코트 관리
+    usage: /포키냥 <소환|제거|돌리기|리로드>
+    aliases: [포키냥]
+    permission: pokimascot.admin
+permissions:
+  pokimascot.admin:
+    description: 포키냥 세우기·지우기
+    default: op
