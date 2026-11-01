@@ -1,8 +1,5 @@
 package kr.devaechu.pokiui;
 
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -63,10 +60,6 @@ final class LollipopGuard implements Listener {
         return p.getFoodLevel() >= 20;
     }
 
-    private static void tell(Player p) {
-        p.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(ChatColor.LIGHT_PURPLE + "배불러서 롤리팝을 못 먹어요"));
-    }
-
     @EventHandler
     public void onJoin(PlayerJoinEvent e) {
         Player p = e.getPlayer();
@@ -87,14 +80,12 @@ final class LollipopGuard implements Listener {
         if (fix(it)) p.updateInventory();
         if (!full(p)) return;
         e.setUseItemInHand(Event.Result.DENY);
-        tell(p);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onConsume(PlayerItemConsumeEvent e) {
         if (!isLollipop(e.getItem()) || !full(e.getPlayer())) return;
         e.setCancelled(true);
-        tell(e.getPlayer());
         e.getPlayer().updateInventory();
     }
 }
