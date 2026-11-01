@@ -85,19 +85,54 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     }
 
     // ───────── 위치 저장 ─────────
+    /**
+     * 위치는 월드 이름 + 숫자로 저장 (Location 통째 저장은 서버 켜질 때 월드가 늦게 잡히면 통째로 날아감).
+     * 월드를 못 찾으면 나중에 명령어 쓸 때 다시 시도.
+     */
     private void loadPlaces() {
         var c = getConfig();
-        stage = c.getLocation("stage.location");
-        front = c.getVector("stage.front");
-        screenLoc = c.getLocation("screen.location");
+        stage = place(c, "stage");
+        double fx = c.getDouble("stage.front-x", 0), fz = c.getDouble("stage.front-z", 0);
+        front = (fx == 0 && fz == 0) ? null : new Vector(fx, 0, fz);
+        screenLoc = place(c, "screen");
         screenYaw = (float) c.getDouble("screen.yaw", 0);
+        // 예전(1.1.2 이하) 형식에서 옮겨오기
+        if (stage == null && c.isSet("stage.location")) {
+            try { stage = c.getLocation("stage.location"); Vector v = c.getVector("stage.front"); if (v != null) front = v; } catch (Exception ignored) {}
+        }
+        if (screenLoc == null && c.isSet("screen.location")) {
+            try { screenLoc = c.getLocation("screen.location"); } catch (Exception ignored) {}
+        }
+        if (stage != null && front != null && c.isSet("stage.location")) savePlaces();
+    }
+
+    private static Location place(org.bukkit.configuration.ConfigurationSection c, String k) {
+        String wn = c.getString(k + ".world");
+        if (wn == null || !c.isSet(k + ".x")) return null;
+        World w = Bukkit.getWorld(wn);
+        if (w == null) return null;
+        return new Location(w, c.getDouble(k + ".x"), c.getDouble(k + ".y"), c.getDouble(k + ".z"));
+    }
+
+    private void ensurePlaces() {
+        if ((stage == null || front == null) && getConfig().isSet("stage.world")) loadPlaces();
+        if (screenLoc == null && getConfig().isSet("screen.world")) loadPlaces();
     }
 
     private void savePlaces() {
         var c = getConfig();
-        c.set("stage.location", stage);
-        c.set("stage.front", front);
-        c.set("screen.location", screenLoc);
+        c.set("stage.location", null);
+        c.set("stage.front", null);
+        c.set("screen.location", null);
+        if (stage != null && stage.getWorld() != null) {
+            c.set("stage.world", stage.getWorld().getName());
+            c.set("stage.x", stage.getX()); c.set("stage.y", stage.getY()); c.set("stage.z", stage.getZ());
+        }
+        if (front != null) { c.set("stage.front-x", front.getX()); c.set("stage.front-z", front.getZ()); }
+        if (screenLoc != null && screenLoc.getWorld() != null) {
+            c.set("screen.world", screenLoc.getWorld().getName());
+            c.set("screen.x", screenLoc.getX()); c.set("screen.y", screenLoc.getY()); c.set("screen.z", screenLoc.getZ());
+        }
         c.set("screen.yaw", screenYaw);
         saveConfig();
     }
@@ -121,6 +156,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     @Override
     public boolean onCommand(CommandSender s, Command cmd, String label, String[] a) {
         if (a.length == 0) { help(s); return true; }
+        ensurePlaces();
         String sub = a[0];
         if (sub.equals("리로드")) {
             reloadConfig(); loadPlaces(); msg(s, "설정 다시 읽음"); return true;
@@ -214,7 +250,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             if (s instanceof Player p) p.openInventory(new Remote().inv);
             return true;
         }
-        if (stage == null) { msg(s, "&c먼저 무대 가운데에 서서 객석을 보고 &e/공연 무대 &c를 쳐줘"); return true; }
+        if (stage == null || front == null) { msg(s, "&c먼저 무대 가운데에 서서 객석을 보고 &e/공연 무대 &c를 쳐줘"); return true; }
         switch (sub) {
             case "시작" -> opening(a.length > 1 ? String.join(" ", Arrays.copyOfRange(a, 1, a.length)) : null);
             case "끝" -> finale();
@@ -655,10 +691,11 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         if (!(e.getInventory().getHolder() instanceof Remote r)) return;
         e.setCancelled(true);
         if (!(e.getWhoClicked() instanceof Player p) || e.getClickedInventory() != r.inv) return;
+        ensurePlaces();
         String a = r.act.get(e.getRawSlot());
         if (a == null) return;
         if (!p.hasPermission("pokilive.admin")) return;
-        if (stage == null) { p.closeInventory(); msg(p, "&c먼저 무대 가운데에 서서 객석을 보고 &e/공연 무대"); return; }
+        if (stage == null || front == null) { p.closeInventory(); msg(p, "&c먼저 무대 가운데에 서서 객석을 보고 &e/공연 무대"); return; }
         p.playSound(p.getLocation(), Sound.UI_BUTTON_CLICK, 0.6f, 1.4f);
         if (a.equals("act:시작")) { p.closeInventory(); opening(null); }
         else if (a.equals("act:끝")) { p.closeInventory(); finale(); }
