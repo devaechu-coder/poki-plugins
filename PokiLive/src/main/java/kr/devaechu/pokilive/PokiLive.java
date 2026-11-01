@@ -196,52 +196,59 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             return true;
         }
         if (sub.equals("티비")) {
+            String op = a.length > 1 ? a[1] : "추가";
+            List<String> tvs = tvs();
+            if (op.equals("목록")) {
+                if (tvs.isEmpty()) msg(s, "등록된 TV 없음 — TV 블록 보고 &e/공연 티비");
+                for (int k = 0; k < tvs.size(); k++) msg(s, (k + 1) + ". " + tvs.get(k).replace(";", " "));
+                return true;
+            }
+            if (op.equals("끄기")) { tvOff(s); return true; }
+            if (op.equals("삭제") && a.length > 2 && a[2].equals("전체")) {
+                getConfig().set("tvs", new ArrayList<String>()); saveConfig(); msg(s, "TV 등록 전부 지움"); return true;
+            }
             if (!(s instanceof Player p)) return true;
             RayTraceResult hit = p.rayTraceBlocks(80);
             if (hit == null || hit.getHitBlock() == null) { msg(s, "&c영상 프레임(TV) 블록을 바라보고 다시 쳐줘"); return true; }
             Block b = hit.getHitBlock();
-            var c = getConfig();
-            c.set("tv.world", b.getWorld().getName());
-            c.set("tv.x", b.getX()); c.set("tv.y", b.getY()); c.set("tv.z", b.getZ());
-            saveConfig();
-            msg(s, "TV 자리 저장 (" + b.getType().name().toLowerCase() + " " + b.getX() + " " + b.getY() + " " + b.getZ() + ") — 이제 &e/공연 치지직 [채널ID]");
+            String key = b.getWorld().getName() + ";" + b.getX() + ";" + b.getY() + ";" + b.getZ();
+            if (op.equals("삭제")) {
+                msg(s, tvs.remove(key) ? "이 TV 등록 지움" : "&c이 블록은 등록된 TV가 아니야 (&e/공연 티비 목록&c)");
+            } else if (tvs.contains(key)) {
+                msg(s, "이미 등록된 TV야 (" + tvs.size() + "대)"); return true;
+            } else {
+                tvs.add(key);
+                msg(s, "TV 등록 (" + b.getType().name().toLowerCase() + " " + key.replace(";", " ") + ") — 지금 " + tvs.size() + "대. 영상 틀면 전부 같이 나와");
+            }
+            getConfig().set("tvs", tvs); saveConfig();
             return true;
         }
-        if (sub.equals("치지직")) {
-            String arg = a.length > 1 ? a[1] : getConfig().getString("chzzk.channel", "");
-            if (!getConfig().contains("tv.x")) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
-            if (arg.equals("끄기")) {
-                tvCommand("pause true");
-                tvCommand("alpha 0");    // 멈춘 화면이 남지 않게 투명 → 뒤의 검은 스크린이 보임
-                tvOn = false;
-                if (screenText != null && screenLoc != null) showText(screenText);
-                msg(s, "TV 멈춤" + (screenText != null ? " — 스크린 문구 다시 켬" : ""));
-                return true;
+        if (sub.equals("치지직") || sub.equals("다시보기") || sub.equals("클립")) {
+            if (tvs().isEmpty()) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
+            String arg = a.length > 1 ? a[1] : (sub.equals("치지직") ? getConfig().getString("chzzk.channel", "") : "");
+            if (arg.equals("끄기")) { tvOff(s); return true; }
+            String what; java.util.concurrent.Callable<String> job;
+            if (sub.equals("치지직")) {
+                String id = channelId(arg);
+                if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
+                what = "치지직 라이브"; job = () -> fetchHls(id);
+            } else if (sub.equals("다시보기")) {
+                String no = videoNo(arg);
+                if (no.isEmpty()) { msg(s, "/공연 다시보기 <다시보기 링크 또는 영상 번호>  (chzzk.naver.com/video/숫자)"); return true; }
+                what = "다시보기"; job = () -> fetchVod(no);
+            } else {
+                String uid = clipId(arg);
+                if (uid.isEmpty()) { msg(s, "/공연 클립 <클립 링크 또는 클립 ID>  (chzzk.naver.com/clips/...)"); return true; }
+                what = "클립"; job = () -> fetchClip(uid);
             }
-            String id = channelId(arg);
-            if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
-            msg(s, "치지직 방송 주소 가져오는 중...");
+            msg(s, what + " 주소 가져오는 중...");
             Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
                 String url = null, err = null;
-                try { url = fetchHls(id); } catch (Exception e) { err = e.getMessage(); }
+                try { url = job.call(); } catch (Exception e) { err = e.getMessage(); }
                 final String fu = url, fe = err;
                 Bukkit.getScheduler().runTask(this, () -> {
                     if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
-                    boolean ok = tvCommand("url " + fu);
-                    tvCommand("alpha 255");
-                    tvCommand("pause false");
-                    if (ok) {
-                        tvOn = true;
-                        String keep = screenText;
-                        removeScreen();          // 영상 위에 글자가 덮이지 않게 숨김
-                        screenText = keep;       // 끄면 다시 띄울 수 있게 기억
-                    }
-                    msg(s, ok ? "TV에 치지직 라이브 연결!" : "&cTV 명령 실패 — WATERFrAMES 가 서버에 있는지 확인해줘. 아래 주소를 복사해서 직접 넣어도 돼");
-                    if (s instanceof Player p) {
-                        TextComponent t = new TextComponent(color("&7[클릭해서 방송 주소 복사]"));
-                        t.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, fu));
-                        p.spigot().sendMessage(t);
-                    }
+                    playOnTv(s, fu, what);
                 });
             });
             return true;
@@ -316,16 +323,128 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         throw new Exception("HLS 주소가 없어");
     }
 
-    /** 저장된 TV 블록에 /waterframes edit 명령을 콘솔로 보냄. */
-    private boolean tvCommand(String rest) {
+    static final String UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+
+    static String get(String url) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", UA)
+                .timeout(Duration.ofSeconds(10)).GET().build();
+        HttpResponse<String> res = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                .send(req, HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() != 200) throw new Exception("응답 " + res.statusCode());
+        return res.body();
+    }
+
+    static JsonObject content(String body, String notFound) throws Exception {
+        JsonElement ce = JsonParser.parseString(body).getAsJsonObject().get("content");
+        if (ce == null || ce.isJsonNull()) throw new Exception(notFound);
+        return ce.getAsJsonObject();
+    }
+
+    static String str(JsonObject o, String k) {
+        JsonElement e = o.get(k);
+        return (e == null || e.isJsonNull()) ? null : e.getAsString();
+    }
+
+    static String videoNo(String arg) {
+        if (arg == null) return "";
+        var m = java.util.regex.Pattern.compile("(?:video/)?(\\d{3,})").matcher(arg.trim());
+        return m.find() ? m.group(1) : "";
+    }
+
+    static String clipId(String arg) {
+        if (arg == null) return "";
+        String t = arg.trim();
+        int q = t.indexOf('?'); if (q >= 0) t = t.substring(0, q);
+        while (t.endsWith("/")) t = t.substring(0, t.length() - 1);
+        int sl = t.lastIndexOf('/'); if (sl >= 0) t = t.substring(sl + 1);
+        return t.matches("[A-Za-z0-9]{5,20}") ? t : "";
+    }
+
+    /** 다시보기: 방송 직후 다시보기는 HLS 주소가 바로 있고, 정식 VOD 는 videoId+inKey 로 네이버 영상 서버를 거침. */
+    static String fetchVod(String no) throws Exception {
+        JsonObject c = content(get("https://api.chzzk.naver.com/service/v3/videos/" + no), "영상을 못 찾았어");
+        String rewind = str(c, "liveRewindPlaybackJson");
+        if (rewind != null) {
+            for (JsonElement m : JsonParser.parseString(rewind).getAsJsonObject().getAsJsonArray("media")) {
+                JsonObject mo = m.getAsJsonObject();
+                if ("HLS".equals(str(mo, "mediaId")) && mo.has("path")) return mo.get("path").getAsString();
+            }
+        }
+        String vid = str(c, "videoId"), key = str(c, "inKey");
+        if (vid == null || key == null) throw new Exception("볼 수 없는 영상이야 (처리 중이거나 연령·구독 제한)");
+        return neon(vid, key, false);
+    }
+
+    static String fetchClip(String uid) throws Exception {
+        JsonObject c = content(get("https://api.chzzk.naver.com/service/v1/play-info/clip/" + uid), "클립을 못 찾았어");
+        String vid = str(c, "videoId"), key = str(c, "inKey");
+        if (vid == null || key == null) throw new Exception("볼 수 없는 클립이야");
+        return neon(vid, key, true);
+    }
+
+    /** 네이버 영상 서버(MPD)에서 재생 주소: 클립은 mp4 한 파일, 다시보기는 HLS(m3u8) 우선. */
+    static String neon(String videoId, String inKey, boolean preferMp4) throws Exception {
+        String xml = get("https://apis.naver.com/neonplayer/vodplay/v2/playback/" + videoId + "?key=" + inKey);
+        var mp4 = java.util.regex.Pattern.compile("<BaseURL>(https://[^<]+?\\.mp4\\?[^<]*)</BaseURL>").matcher(xml);
+        var m3u = java.util.regex.Pattern.compile("nvod:m3u=\"([^\"]+)\"").matcher(xml);
+        String a = mp4.find() ? mp4.group(1) : null, b = m3u.find() ? m3u.group(1) : null;
+        String pick = preferMp4 ? (a != null ? a : b) : (b != null ? b : a);
+        if (pick == null) throw new Exception("재생 주소를 못 찾았어");
+        return pick.replace("&amp;", "&");
+    }
+
+    private void playOnTv(CommandSender s, String url, String what) {
+        boolean ok = tvCommand("url " + url);
+        tvCommand("alpha 255");
+        tvCommand("pause false");
+        if (ok) {
+            tvOn = true;
+            String keep = screenText;
+            removeScreen();          // 영상 위에 글자가 덮이지 않게 숨김
+            screenText = keep;       // 끄면 다시 띄울 수 있게 기억
+        }
+        msg(s, ok ? "TV " + tvs().size() + "대에 " + what + " 연결!" : "&cTV 명령 실패 — WATERFrAMES 가 서버에 있는지 확인해줘. 아래 주소를 복사해서 직접 넣어도 돼");
+        if (s instanceof Player p) {
+            TextComponent t = new TextComponent(color("&7[클릭해서 영상 주소 복사]"));
+            t.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, url));
+            p.spigot().sendMessage(t);
+        }
+    }
+
+    private void tvOff(CommandSender s) {
+        tvCommand("pause true");
+        tvCommand("alpha 0");    // 멈춘 화면이 남지 않게 투명 → 뒤의 검은 스크린이 보임
+        tvOn = false;
+        if (screenText != null && screenLoc != null) showText(screenText);
+        msg(s, "TV 멈춤" + (screenText != null ? " — 스크린 문구 다시 켬" : ""));
+    }
+
+    /** 등록된 TV 목록 ("월드;x;y;z"). 예전(1.1.x) tv.* 한 대는 자동으로 옮김. */
+    private List<String> tvs() {
         var c = getConfig();
-        World w = Bukkit.getWorld(c.getString("tv.world", ""));
-        if (w == null) return false;
-        String pos = c.getInt("tv.x") + " " + c.getInt("tv.y") + " " + c.getInt("tv.z");
-        String cmd = "waterframes edit " + pos + " " + rest;
-        if (!w.equals(Bukkit.getWorlds().get(0))) cmd = "execute in " + w.getKey() + " run " + cmd;
-        try { return Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd); }
-        catch (Exception e) { getLogger().warning("TV 명령 실패: " + e.getMessage()); return false; }
+        List<String> out = new ArrayList<>(c.getStringList("tvs"));
+        if (c.isSet("tv.x")) {
+            String old = c.getString("tv.world", "world") + ";" + c.getInt("tv.x") + ";" + c.getInt("tv.y") + ";" + c.getInt("tv.z");
+            if (!out.contains(old)) out.add(0, old);
+            c.set("tv", null); c.set("tvs", out); saveConfig();
+        }
+        return out;
+    }
+
+    /** 등록된 TV 전부에 /waterframes edit 명령을 콘솔로 보냄. 하나라도 되면 true. */
+    private boolean tvCommand(String rest) {
+        boolean any = false;
+        for (String t : tvs()) {
+            String[] k = t.split(";");
+            if (k.length < 4) continue;
+            World w = Bukkit.getWorld(k[0]);
+            if (w == null) continue;
+            String cmd = "waterframes edit " + k[1] + " " + k[2] + " " + k[3] + " " + rest;
+            if (!w.equals(Bukkit.getWorlds().get(0))) cmd = "execute in " + w.getKey() + " run " + cmd;
+            try { any |= Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd); }
+            catch (Exception e) { getLogger().warning("TV 명령 실패 (" + t + "): " + e.getMessage()); }
+        }
+        return any;
     }
 
     static final List<String> LIGHTS = List.of("반짝이", "하트", "음표", "벚꽃", "별빛");
@@ -339,19 +458,21 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&e/공연 불꽃 [" + String.join("|", FW) + "]");
         msg(s, "&e/공연 문구 <내용|끄기> &f/ &e/공연 조명 <" + String.join("|", LIGHTS) + "|끄기>");
         msg(s, "&e/공연 스포트 [닉|끄기] &f/ &e/공연 멈춤");
-        msg(s, "&e/공연 티비 &f— 영상 프레임(TV) 보고 치기 / &e/공연 치지직 [채널ID|끄기]");
+        msg(s, "&e/공연 티비 [목록|삭제|끄기] &f— 영상 프레임(TV) 보고 치면 등록 (여러 대 가능)");
+        msg(s, "&e/공연 치지직 [채널ID] &f/ &e/공연 다시보기 <링크> &f/ &e/공연 클립 <링크> &f— 등록된 TV 전부에 틀기");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
         List<String> opts;
-        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "치지직", "리로드");
+        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "치지직", "다시보기", "클립", "리로드");
         else if (a.length == 2) opts = switch (a[0]) {
             case "불꽃" -> FW;
             case "조명" -> concat(LIGHTS, "끄기");
             case "문구" -> List.of("끄기");
             case "스크린" -> List.of("돌리기");
-            case "치지직" -> List.of("끄기");
+            case "치지직", "다시보기", "클립" -> List.of("끄기");
+            case "티비" -> List.of("목록", "삭제", "끄기");
             case "스포트" -> { List<String> n = new ArrayList<>(); n.add("끄기"); Bukkit.getOnlinePlayers().forEach(p -> n.add(p.getName())); yield n; }
             default -> List.of();
         };
