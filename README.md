@@ -10,6 +10,7 @@
 | [PokiStats](PokiStats/) | 운영 통계 — 동접 · 접속 기록 · 후원 통계를 통계 서버로 전송 (`/통계`, OP) |
 | [PokiHelp](PokiHelp/) | 문의 접수 — `/문의`, `/신고` 는 운영진한테만, 운영진 알림 · 문의함 GUI (`/문의함`) |
 | [PokiUI](PokiUI/) | 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈 (SimpleShopJS 상점 7개) |
+| [PokiLive](PokiLive/) | 콘서트장 공연 연출 — 불꽃쇼 · 스크린 문구 · 조명 파티클 · 스포트라이트 · 리모컨 GUI (`/공연`) |
 | [PokiMaintenance](PokiMaintenance/) | 점검 모드 — 점검 중엔 운영진만 접속 (`/점검 시작 22:00`, `/점검 끝`), 런처에 점검 표시 |
 
 각 폴더에서 `mvn package` 로 빌드.

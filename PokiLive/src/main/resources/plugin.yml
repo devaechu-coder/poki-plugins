@@ -1,0 +1,16 @@
+name: PokiLive
+version: 1.0.0
+main: kr.devaechu.pokilive.PokiLive
+api-version: '1.21'
+author: DevAechu
+description: 콘서트장 공연 연출 — 불꽃쇼, 스크린 문구, 조명 파티클, 스포트라이트, 오프닝·피날레, 리모컨 GUI
+commands:
+  pokilive:
+    description: 공연 연출
+    usage: /공연 <리모컨|무대|스크린|시작|끝|불꽃|문구|조명|스포트|리로드>
+    aliases: [공연]
+    permission: pokilive.admin
+permissions:
+  pokilive.admin:
+    description: 공연 연출 쓰기
+    default: op
