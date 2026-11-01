@@ -63,6 +63,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     private TextDisplay screen;
     private String screenText;
     private BukkitTask screenTask, lightTask;
+    private boolean tvOn;            // 치지직 TV 켜져 있으면 스크린 문구 숨김 (영상 가리지 않게)
     private String lightMode;        // 반짝이, 하트, 음표, 벚꽃, 별빛
     private final Map<UUID, BukkitTask> spots = new HashMap<>();
     private final List<BukkitTask> shows = new ArrayList<>();
@@ -173,7 +174,13 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         if (sub.equals("치지직")) {
             String arg = a.length > 1 ? a[1] : getConfig().getString("chzzk.channel", "");
             if (!getConfig().contains("tv.x")) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
-            if (arg.equals("끄기")) { tvCommand("pause true"); msg(s, "TV 멈춤"); return true; }
+            if (arg.equals("끄기")) {
+                tvCommand("pause true");
+                tvOn = false;
+                if (screenText != null && screenLoc != null) showText(screenText);
+                msg(s, "TV 멈춤" + (screenText != null ? " — 스크린 문구 다시 켬" : ""));
+                return true;
+            }
             String id = channelId(arg);
             if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
             msg(s, "치지직 방송 주소 가져오는 중...");
@@ -185,6 +192,12 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
                     if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
                     boolean ok = tvCommand("url " + fu);
                     tvCommand("pause false");
+                    if (ok) {
+                        tvOn = true;
+                        String keep = screenText;
+                        removeScreen();          // 영상 위에 글자가 덮이지 않게 숨김
+                        screenText = keep;       // 끄면 다시 띄울 수 있게 기억
+                    }
                     msg(s, ok ? "TV에 치지직 라이브 연결!" : "&cTV 명령 실패 — WATERFrAMES 가 서버에 있는지 확인해줘. 아래 주소를 복사해서 직접 넣어도 돼");
                     if (s instanceof Player p) {
                         TextComponent t = new TextComponent(color("&7[클릭해서 방송 주소 복사]"));
@@ -450,6 +463,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     // ───────── 스크린 문구 ─────────
     private void showText(String raw) {
         screenText = raw;
+        if (tvOn) return;    // TV 방송 중엔 글자 숨김 (끄면 마지막 문구가 다시 나옴)
         boolean cycle = getConfig().getBoolean("screen-color-cycle", true) && !raw.contains("&");
         if (screen == null || !screen.isValid()) spawnScreen();
         if (screen == null) return;
