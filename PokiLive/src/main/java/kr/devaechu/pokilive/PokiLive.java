@@ -589,43 +589,108 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     }
 
     // ───────── 스포트라이트 ─────────
+    // 무대 아치에서 사람한테 내려오는 은은한 빛 원뿔 + 발밑 빛 원 + 주변 실제 밝기(보이지 않는 조명 블록을 보는 사람 화면에만)
+    private final Map<UUID, Location> spotLight = new HashMap<>();
+    static final Particle.DustOptions BEAM = new Particle.DustOptions(Color.fromRGB(0xFFF4DC), 0.7f);
+    static final Particle.DustOptions BEAM_EDGE = new Particle.DustOptions(Color.fromRGB(0xFFE7A8), 0.9f);
+    static final Particle.DustOptions POOL = new Particle.DustOptions(Color.fromRGB(0xFFF8E8), 1.1f);
+
     private boolean toggleSpot(Player t) {
         BukkitTask old = spots.remove(t.getUniqueId());
-        if (old != null) { old.cancel(); t.setGlowing(false); return false; }
-        t.setGlowing(true);
+        if (old != null) { old.cancel(); clearSpotLight(t.getUniqueId()); return false; }
         spots.put(t.getUniqueId(), new BukkitRunnable() {
-            double a = 0;
+            int tick = 0;
             @Override public void run() {
-                if (!t.isOnline()) { cancel(); spots.remove(t.getUniqueId()); return; }
-                Location base = t.getLocation();
-                World w = base.getWorld();
-                a += 0.35;
-                Particle.DustOptions ring = new Particle.DustOptions(Color.fromRGB(0xFFF2B0), 1.2f);
-                for (int i = 0; i < 16; i++) {
-                    double ang = a + i * Math.PI / 8;
-                    w.spawnParticle(Particle.DUST, base.clone().add(Math.cos(ang) * 1.1, 0.1, Math.sin(ang) * 1.1), 1, 0, 0, 0, 0, ring, true);
+                if (!t.isOnline()) { cancel(); spots.remove(t.getUniqueId()); clearSpotLight(t.getUniqueId()); return; }
+                Location feet = t.getLocation();
+                World w = feet.getWorld();
+                tick++;
+                // 빛이 나오는 곳: 무대가 있으면 아치 가운데 높이(사람 쪽 x), 없으면 머리 위 9칸
+                Location src;
+                if (stage != null && front != null && stage.getWorld() == w) {
+                    Location arch = at(0, -2, 11.5);
+                    src = feet.clone().add(0, arch.getY() - feet.getY(), 0)
+                            .add(front.clone().multiply(-2.5));   // 살짝 무대 뒤쪽 위에서 비스듬히
+                } else src = feet.clone().add(0, 9, 0);
+                Vector d = feet.toVector().subtract(src.toVector());
+                double len = d.length();
+                Vector dir = d.clone().normalize();
+                Vector u = dir.clone().crossProduct(new Vector(0, 1, 0));
+                if (u.lengthSquared() < 1e-4) u = new Vector(1, 0, 0);
+                u.normalize();
+                Vector v = dir.clone().crossProduct(u).normalize();
+                var r = ThreadLocalRandom.current();
+                // 원뿔: 위는 좁고 아래로 갈수록 넓게, 듬성듬성 → 안개 낀 빛줄기 느낌
+                for (int k = 0; k < 22; k++) {
+                    double f = Math.sqrt(r.nextDouble());          // 아래쪽에 더 많이
+                    double rad = 0.12 + f * 1.15;
+                    double ang = r.nextDouble() * Math.PI * 2;
+                    double rr = rad * (k % 3 == 0 ? 1.0 : Math.sqrt(r.nextDouble()));
+                    Location p = src.clone().add(dir.clone().multiply(f * len))
+                            .add(u.clone().multiply(Math.cos(ang) * rr)).add(v.clone().multiply(Math.sin(ang) * rr));
+                    if (p.getY() < feet.getY() + 0.15) continue;
+                    w.spawnParticle(Particle.DUST, p, 1, 0, 0, 0, 0, k % 3 == 0 ? BEAM_EDGE : BEAM, true);
                 }
-                // 위에서 내려오는 빛기둥
-                for (double y = 1; y < 9; y += 0.8)
-                    w.spawnParticle(Particle.END_ROD, base.clone().add(Math.cos(a * 2) * 0.5, 2 + y, Math.sin(a * 2) * 0.5), 1, 0, 0, 0, 0, null, true);
+                // 발밑 빛 원 (가장자리 + 안쪽 조금)
+                if (tick % 2 == 0) {
+                    for (int k = 0; k < 20; k++) {
+                        double ang = k * Math.PI / 10 + tick * 0.05;
+                        w.spawnParticle(Particle.DUST, feet.clone().add(Math.cos(ang) * 1.25, 0.06, Math.sin(ang) * 1.25), 1, 0, 0, 0, 0, POOL, true);
+                    }
+                    for (int k = 0; k < 6; k++) {
+                        double ang = r.nextDouble() * Math.PI * 2, rr = Math.sqrt(r.nextDouble()) * 1.1;
+                        w.spawnParticle(Particle.DUST, feet.clone().add(Math.cos(ang) * rr, 0.06, Math.sin(ang) * rr), 1, 0, 0, 0, 0, POOL, true);
+                    }
+                }
+                // 실제 밝기: 머리 높이 빈칸에 조명 블록(가짜, 보이지 않음)
+                if (tick % 2 == 0) moveSpotLight(t);
             }
-        }.runTaskTimer(this, 0L, 3L));
+        }.runTaskTimer(this, 0L, 2L));
         return true;
     }
 
-    private void stopSpots() {
-        for (var e : spots.entrySet()) {
-            e.getValue().cancel();
-            Player p = Bukkit.getPlayer(e.getKey());
-            if (p != null) p.setGlowing(false);
+    private void moveSpotLight(Player t) {
+        Location head = t.getLocation().add(0, 1, 0).getBlock().getLocation();
+        if (!head.getBlock().getType().isAir()) head = t.getLocation().getBlock().getLocation();
+        Location prev = spotLight.get(t.getUniqueId());
+        if (prev != null && prev.equals(head)) {
+            // 새로 가까이 온 사람한테도 보이게 가끔 다시 보냄
+            if (ThreadLocalRandom.current().nextInt(10) != 0) return;
         }
+        if (prev != null && !prev.equals(head)) restoreBlock(prev);
+        if (!head.getBlock().getType().isAir()) { spotLight.remove(t.getUniqueId()); return; }
+        var light = Bukkit.createBlockData("minecraft:light[level=15]");
+        for (Player p : nearby(head)) p.sendBlockChange(head, light);
+        spotLight.put(t.getUniqueId(), head);
+    }
+
+    private void clearSpotLight(UUID id) {
+        Location prev = spotLight.remove(id);
+        if (prev != null) restoreBlock(prev);
+    }
+
+    private void restoreBlock(Location l) {
+        for (Player p : nearby(l)) p.sendBlockChange(l, l.getBlock().getBlockData());
+    }
+
+    private static List<Player> nearby(Location l) {
+        List<Player> out = new ArrayList<>();
+        if (l.getWorld() == null) return out;
+        for (Player p : l.getWorld().getPlayers()) if (p.getLocation().distanceSquared(l) < 96 * 96) out.add(p);
+        return out;
+    }
+
+    private void stopSpots() {
+        for (var e : spots.entrySet()) e.getValue().cancel();
+        for (UUID id : new ArrayList<>(spotLight.keySet())) clearSpotLight(id);
         spots.clear();
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
         BukkitTask t = spots.remove(e.getPlayer().getUniqueId());
-        if (t != null) { t.cancel(); e.getPlayer().setGlowing(false); }
+        if (t != null) t.cancel();
+        clearSpotLight(e.getPlayer().getUniqueId());
     }
 
     private void stopAll() {
@@ -653,7 +718,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             put(14, Material.PINK_DYE, "&f불꽃 — 하트", "fw:하트", "하트 모양 빛");
             put(21, Material.BLAZE_ROD, "&f불꽃 — 연속", "fw:연속", "바깥에서 가운데로 차례로");
             put(22, Material.TNT_MINECART, "&f불꽃 — 피날레", "fw:피날레", "왕창");
-            put(23, Material.SPECTRAL_ARROW, "&e스포트라이트 (나)", "spot", "나한테 빛 + 발광, 한 번 더 누르면 끔");
+            put(23, Material.SPECTRAL_ARROW, "&e스포트라이트 (나)", "spot", "위에서 내려오는 빛 + 발밑 빛 원, 한 번 더 누르면 끔");
             put(27, Material.END_ROD, "&f조명 — 반짝이", "light:반짝이", null);
             put(28, Material.RED_DYE, "&f조명 — 하트", "light:하트", null);
             put(29, Material.NOTE_BLOCK, "&f조명 — 음표", "light:음표", null);
