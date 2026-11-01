@@ -176,6 +176,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             if (!getConfig().contains("tv.x")) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
             if (arg.equals("끄기")) {
                 tvCommand("pause true");
+                tvCommand("alpha 0");    // 멈춘 화면이 남지 않게 투명 → 뒤의 검은 스크린이 보임
                 tvOn = false;
                 if (screenText != null && screenLoc != null) showText(screenText);
                 msg(s, "TV 멈춤" + (screenText != null ? " — 스크린 문구 다시 켬" : ""));
@@ -191,6 +192,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
                 Bukkit.getScheduler().runTask(this, () -> {
                     if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
                     boolean ok = tvCommand("url " + fu);
+                    tvCommand("alpha 255");
                     tvCommand("pause false");
                     if (ok) {
                         tvOn = true;
