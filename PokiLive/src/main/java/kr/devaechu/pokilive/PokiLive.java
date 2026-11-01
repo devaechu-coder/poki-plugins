@@ -27,7 +27,18 @@ import org.bukkit.util.Vector;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.block.Block;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -147,6 +158,43 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             msg(s, "스크린 자리 저장. 글자가 거꾸로 보이면 &e/공연 스크린 돌리기");
             return true;
         }
+        if (sub.equals("티비")) {
+            if (!(s instanceof Player p)) return true;
+            RayTraceResult hit = p.rayTraceBlocks(80);
+            if (hit == null || hit.getHitBlock() == null) { msg(s, "&c영상 프레임(TV) 블록을 바라보고 다시 쳐줘"); return true; }
+            Block b = hit.getHitBlock();
+            var c = getConfig();
+            c.set("tv.world", b.getWorld().getName());
+            c.set("tv.x", b.getX()); c.set("tv.y", b.getY()); c.set("tv.z", b.getZ());
+            saveConfig();
+            msg(s, "TV 자리 저장 (" + b.getType().name().toLowerCase() + " " + b.getX() + " " + b.getY() + " " + b.getZ() + ") — 이제 &e/공연 치지직 [채널ID]");
+            return true;
+        }
+        if (sub.equals("치지직")) {
+            String arg = a.length > 1 ? a[1] : getConfig().getString("chzzk.channel", "");
+            if (!getConfig().contains("tv.x")) { msg(s, "&c먼저 영상 프레임(TV)을 바라보고 &e/공연 티비"); return true; }
+            if (arg.equals("끄기")) { tvCommand("pause true"); msg(s, "TV 멈춤"); return true; }
+            String id = channelId(arg);
+            if (id.isEmpty()) { msg(s, "/공연 치지직 <채널ID 또는 치지직 링크>  (config 에 chzzk.channel 넣으면 생략 가능)"); return true; }
+            msg(s, "치지직 방송 주소 가져오는 중...");
+            Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+                String url = null, err = null;
+                try { url = fetchHls(id); } catch (Exception e) { err = e.getMessage(); }
+                final String fu = url, fe = err;
+                Bukkit.getScheduler().runTask(this, () -> {
+                    if (fu == null) { msg(s, "&c가져오기 실패: " + fe); return; }
+                    boolean ok = tvCommand("url " + fu);
+                    tvCommand("pause false");
+                    msg(s, ok ? "TV에 치지직 라이브 연결!" : "&cTV 명령 실패 — WATERFrAMES 가 서버에 있는지 확인해줘. 아래 주소를 복사해서 직접 넣어도 돼");
+                    if (s instanceof Player p) {
+                        TextComponent t = new TextComponent(color("&7[클릭해서 방송 주소 복사]"));
+                        t.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, fu));
+                        p.spigot().sendMessage(t);
+                    }
+                });
+            });
+            return true;
+        }
         if (sub.equals("리모컨")) {
             if (s instanceof Player p) p.openInventory(new Remote().inv);
             return true;
@@ -182,6 +230,53 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         return true;
     }
 
+    // ───────── 치지직 → WATERFrAMES TV ─────────
+    static String channelId(String arg) {
+        if (arg == null) return "";
+        String t = arg.trim();
+        int q = t.indexOf('?'); if (q >= 0) t = t.substring(0, q);
+        while (t.endsWith("/")) t = t.substring(0, t.length() - 1);
+        int sl = t.lastIndexOf('/'); if (sl >= 0) t = t.substring(sl + 1);
+        return t.matches("[0-9a-fA-F]{32}") ? t.toLowerCase() : "";
+    }
+
+    /** 치지직 live-detail 에서 HLS 주소(토큰 포함)를 뽑음. 비동기에서 부를 것. */
+    static String fetchHls(String id) throws Exception {
+        HttpRequest req = HttpRequest.newBuilder(URI.create("https://api.chzzk.naver.com/service/v3/channels/" + id + "/live-detail"))
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36")
+                .timeout(Duration.ofSeconds(10)).GET().build();
+        HttpResponse<String> res = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
+                .send(req, HttpResponse.BodyHandlers.ofString());
+        if (res.statusCode() != 200) throw new Exception("치지직 응답 " + res.statusCode());
+        JsonObject root = JsonParser.parseString(res.body()).getAsJsonObject();
+        JsonElement ce = root.get("content");
+        if (ce == null || ce.isJsonNull()) throw new Exception("채널을 못 찾았어");
+        JsonObject c = ce.getAsJsonObject();
+        JsonElement st = c.get("status");
+        if (st == null || st.isJsonNull() || !"OPEN".equals(st.getAsString())) throw new Exception("지금 방송 중이 아니야");
+        JsonElement pj = c.get("livePlaybackJson");
+        if (pj == null || pj.isJsonNull()) throw new Exception("방송 주소가 없어 (연령 제한 방송일 수 있어)");
+        JsonObject pb = JsonParser.parseString(pj.getAsString()).getAsJsonObject();
+        for (JsonElement m : pb.getAsJsonArray("media")) {
+            JsonObject mo = m.getAsJsonObject();
+            if (mo.has("mediaId") && "HLS".equals(mo.get("mediaId").getAsString()) && mo.has("path"))
+                return mo.get("path").getAsString();
+        }
+        throw new Exception("HLS 주소가 없어");
+    }
+
+    /** 저장된 TV 블록에 /waterframes edit 명령을 콘솔로 보냄. */
+    private boolean tvCommand(String rest) {
+        var c = getConfig();
+        World w = Bukkit.getWorld(c.getString("tv.world", ""));
+        if (w == null) return false;
+        String pos = c.getInt("tv.x") + " " + c.getInt("tv.y") + " " + c.getInt("tv.z");
+        String cmd = "waterframes edit " + pos + " " + rest;
+        if (!w.equals(Bukkit.getWorlds().get(0))) cmd = "execute in " + w.getKey() + " run " + cmd;
+        try { return Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd); }
+        catch (Exception e) { getLogger().warning("TV 명령 실패: " + e.getMessage()); return false; }
+    }
+
     static final List<String> LIGHTS = List.of("반짝이", "하트", "음표", "벚꽃", "별빛");
     static final List<String> FW = List.of("기본", "별", "하트", "연속", "피날레");
 
@@ -193,17 +288,19 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&e/공연 불꽃 [" + String.join("|", FW) + "]");
         msg(s, "&e/공연 문구 <내용|끄기> &f/ &e/공연 조명 <" + String.join("|", LIGHTS) + "|끄기>");
         msg(s, "&e/공연 스포트 [닉|끄기] &f/ &e/공연 멈춤");
+        msg(s, "&e/공연 티비 &f— 영상 프레임(TV) 보고 치기 / &e/공연 치지직 [채널ID|끄기]");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
         List<String> opts;
-        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "리로드");
+        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "치지직", "리로드");
         else if (a.length == 2) opts = switch (a[0]) {
             case "불꽃" -> FW;
             case "조명" -> concat(LIGHTS, "끄기");
             case "문구" -> List.of("끄기");
             case "스크린" -> List.of("돌리기");
+            case "치지직" -> List.of("끄기");
             case "스포트" -> { List<String> n = new ArrayList<>(); n.add("끄기"); Bukkit.getOnlinePlayers().forEach(p -> n.add(p.getName())); yield n; }
             default -> List.of();
         };
@@ -512,6 +609,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             put(31, Material.AMETHYST_SHARD, "&f조명 — 별빛", "light:별빛", null);
             put(32, Material.GRAY_DYE, "&7조명 끄기", "light:끄기", null);
             put(34, Material.BLACK_CONCRETE, "&7스크린 문구 끄기", "screen:끄기", "문구 바꾸기는 /공연 문구 <내용>");
+            put(33, Material.LIME_DYE, "&a치지직 라이브 켜기", "chzzk", "config 의 chzzk.channel 방송을 TV에 연결");
             put(35, Material.BARRIER, "&c모두 멈춤", "stop", "조명·스포트·예약된 불꽃 멈춤");
             ItemStack pane = item(Material.PINK_STAINED_GLASS_PANE, " ", null);
             for (int i = 0; i < 9; i++) inv.setItem(i, i % 2 == 0 ? pane : item(Material.LIGHT_BLUE_STAINED_GLASS_PANE, " ", null));
@@ -556,6 +654,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         }
         else if (a.equals("spot")) msg(p, toggleSpot(p) ? "스포트라이트 켬" : "스포트라이트 끔");
         else if (a.equals("screen:끄기")) { removeScreen(); screenText = null; msg(p, "스크린 문구 끔"); }
+        else if (a.equals("chzzk")) { p.closeInventory(); p.performCommand("pokilive 치지직"); }
         else if (a.equals("stop")) { stopAll(); msg(p, "연출 모두 멈춤"); }
     }
 
