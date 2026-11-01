@@ -327,6 +327,8 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
 
     static String get(String url) throws Exception {
         HttpRequest req = HttpRequest.newBuilder(URI.create(url)).header("User-Agent", UA)
+                .header("Accept", "application/json, application/dash+xml, application/xml;q=0.9, */*;q=0.8")
+                .header("Referer", "https://chzzk.naver.com/").header("Origin", "https://chzzk.naver.com")
                 .timeout(Duration.ofSeconds(10)).GET().build();
         HttpResponse<String> res = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()
                 .send(req, HttpResponse.BodyHandlers.ofString());
@@ -384,13 +386,18 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
 
     /** 네이버 영상 서버(MPD)에서 재생 주소: 클립은 mp4 한 파일, 다시보기는 HLS(m3u8) 우선. */
     static String neon(String videoId, String inKey, boolean preferMp4) throws Exception {
-        String xml = get("https://apis.naver.com/neonplayer/vodplay/v2/playback/" + videoId + "?key=" + inKey);
-        var mp4 = java.util.regex.Pattern.compile("<BaseURL>(https://[^<]+?\\.mp4\\?[^<]*)</BaseURL>").matcher(xml);
-        var m3u = java.util.regex.Pattern.compile("nvod:m3u=\"([^\"]+)\"").matcher(xml);
+        String body = get("https://apis.naver.com/neonplayer/vodplay/v2/playback/" + videoId + "?key=" + inKey);
+        // 응답이 XML(MPD)이든 JSON 이든 주소만 뽑음
+        String t = body.replace("\\/", "/").replace("\\u0026", "&").replace("&amp;", "&");
+        var mp4 = java.util.regex.Pattern.compile("(https://[^\"'<>\\s]+?\\.mp4\\?[^\"'<>\\s]*)").matcher(t);
+        var m3u = java.util.regex.Pattern.compile("(https://[^\"'<>\\s]+?\\.m3u8\\?[^\"'<>\\s]*)").matcher(t);
         String a = mp4.find() ? mp4.group(1) : null, b = m3u.find() ? m3u.group(1) : null;
         String pick = preferMp4 ? (a != null ? a : b) : (b != null ? b : a);
-        if (pick == null) throw new Exception("재생 주소를 못 찾았어");
-        return pick.replace("&amp;", "&");
+        if (pick == null) {
+            String head = body.replaceAll("\\s+", " ");
+            throw new Exception("재생 주소를 못 찾았어 (응답: " + head.substring(0, Math.min(140, head.length())) + ")");
+        }
+        return pick;
     }
 
     private void playOnTv(CommandSender s, String url, String what) {
