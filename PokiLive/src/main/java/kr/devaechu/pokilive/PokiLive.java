@@ -236,6 +236,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         }
         if (sub.equals("치지직") || sub.equals("다시보기") || sub.equals("클립"))
             return startPlay(s, sub, a.length > 1 ? a[1] : (sub.equals("치지직") ? getConfig().getString("chzzk.channel", "") : ""));
+        if (sub.equals("응원봉")) return stickCmd(s, a);
         if (sub.equals("리모컨")) {
             if (s instanceof Player p) p.openInventory(new Remote().inv);
             return true;
@@ -498,6 +499,8 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&e/공연 불꽃 [" + String.join("|", FW) + "]");
         msg(s, "&e/공연 문구 <내용|끄기> &f/ &e/공연 조명 <" + String.join("|", LIGHTS) + "|끄기>");
         msg(s, "&e/공연 스포트 [닉|끄기] &f/ &e/공연 멈춤");
+        msg(s, "&e/공연 응원봉 <색|#RRGGBB|반짝|무지개|켜기|끄기> &f— 공연장 응원봉 전부 같이 바꾸기");
+        msg(s, "&e/공연 응원봉 지급 [닉|전체] &f/ &e/공연 응원봉 놔두기 &f(자동 맞추기 멈춤)");
         msg(s, "&e/공연 티비 [목록|삭제|끄기] &f— 영상 프레임(TV) 보고 치면 등록 (여러 대 가능)");
         msg(s, "&e/공연 틀기 <링크> &f— 치지직 라이브·다시보기·클립·영상 주소 아무거나 (등록된 TV 전부)");
         msg(s, "&e/공연 치지직 [채널ID] &f/ &e/공연 다시보기 <링크> &f/ &e/공연 클립 <링크> &f/ &e/공연 치지직 끄기");
@@ -506,7 +509,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     @Override
     public List<String> onTabComplete(CommandSender s, Command c, String l, String[] a) {
         List<String> opts;
-        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "스포트", "멈춤", "티비", "틀기", "치지직", "다시보기", "클립", "리로드");
+        if (a.length == 1) opts = List.of("리모컨", "무대", "스크린", "시작", "끝", "불꽃", "문구", "조명", "응원봉", "스포트", "멈춤", "티비", "틀기", "치지직", "다시보기", "클립", "리로드");
         else if (a.length == 2) opts = switch (a[0]) {
             case "불꽃" -> FW;
             case "조명" -> concat(LIGHTS, "끄기");
@@ -514,6 +517,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             case "스크린" -> List.of("돌리기");
             case "치지직", "다시보기", "클립" -> List.of("끄기");
             case "티비" -> List.of("목록", "삭제", "끄기");
+            case "응원봉" -> concat(new ArrayList<>(STICK_COLORS.keySet()), "반짝", "무지개", "켜기", "끄기", "지급", "놔두기");
             case "스포트" -> { List<String> n = new ArrayList<>(); n.add("끄기"); Bukkit.getOnlinePlayers().forEach(p -> n.add(p.getName())); yield n; }
             default -> List.of();
         };
@@ -522,7 +526,97 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         return opts.stream().filter(o -> o.startsWith(cur)).toList();
     }
 
-    private static List<String> concat(List<String> l, String x) { List<String> o = new ArrayList<>(l); o.add(x); return o; }
+    private static List<String> concat(List<String> l, String... x) { List<String> o = new ArrayList<>(l); o.addAll(List.of(x)); return o; }
+
+    // ───────── 응원봉 (PokiCosmetics pokicos:lightstick) ─────────
+    // 응원봉 상태 = custom_model_data = ((모드*8+디자인)<<25)|RGB, 모드 0 켜짐 1 반짝 2 꺼짐 3 무지개. 1~7 작은 값 = 디자인만
+    private static final int STICK_ON = 0, STICK_BLINK = 1, STICK_OFF = 2, STICK_RAINBOW = 3;
+    private static final Map<String, Integer> STICK_COLORS = new LinkedHashMap<>();
+    static {
+        STICK_COLORS.put("분홍", 0xFF8FC7); STICK_COLORS.put("하늘", 0x7FD3FF); STICK_COLORS.put("노랑", 0xFFE066);
+        STICK_COLORS.put("보라", 0xC9A0FF); STICK_COLORS.put("민트", 0x8FF0C8); STICK_COLORS.put("빨강", 0xFF5A6E);
+        STICK_COLORS.put("주황", 0xFFB060); STICK_COLORS.put("초록", 0x9BE07A); STICK_COLORS.put("흰색", 0xFFFFFF);
+    }
+    private Integer stickMode = null;   // null = 응원봉 안 건드림
+    private int stickRgb = 0xFFFFFF;
+    private BukkitTask stickTask;
+
+    private boolean stickCmd(CommandSender s, String[] a) {
+        if (a.length < 2) { msg(s, "/공연 응원봉 <" + String.join("|", STICK_COLORS.keySet()) + "|#RRGGBB|반짝|무지개|켜기|끄기|지급|놔두기>"); return true; }
+        String o = a[1];
+        switch (o) {
+            case "지급" -> {
+                List<Player> to = new ArrayList<>();
+                if (a.length > 2 && !a[2].equals("전체")) { Player t = Bukkit.getPlayerExact(a[2]); if (t == null) { msg(s, "&c그 플레이어를 못 찾았어"); return true; } to.add(t); }
+                else to.addAll(stage != null ? audience() : new ArrayList<>(Bukkit.getOnlinePlayers()));
+                int n = 0;
+                for (Player p : to) {
+                    if (hasStick(p)) continue;
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "minecraft:give " + p.getName() + " pokicos:lightstick[custom_model_data=1,item_name='\"포키냥 응원봉\"']");
+                    n++;
+                }
+                msg(s, "응원봉 " + n + "개 나눠줌 (이미 있는 사람은 건너뜀)");
+                if (stickMode != null) applySticks();
+                return true;
+            }
+            case "놔두기" -> { stickMode = null; if (stickTask != null) { stickTask.cancel(); stickTask = null; } msg(s, "응원봉 자동 맞추기 멈춤 (지금 상태 그대로)"); return true; }
+            case "반짝" -> setSticks(STICK_BLINK, stickRgb);
+            case "무지개" -> setSticks(STICK_RAINBOW, stickRgb);
+            case "켜기" -> setSticks(STICK_ON, stickRgb);
+            case "끄기" -> setSticks(STICK_OFF, stickRgb);
+            default -> {
+                Integer rgb = STICK_COLORS.get(o);
+                if (rgb == null && o.matches("#?[0-9a-fA-F]{6}")) rgb = Integer.parseInt(o.replace("#", ""), 16);
+                if (rgb == null) { msg(s, "&c색 이름이나 #FF8FC7 같은 코드로 써줘: " + String.join(", ", STICK_COLORS.keySet())); return true; }
+                int m = stickMode == null || stickMode == STICK_OFF || stickMode == STICK_RAINBOW ? STICK_ON : stickMode;
+                setSticks(m, rgb);
+            }
+        }
+        msg(s, "응원봉: " + switch (stickMode) { case STICK_BLINK -> "반짝"; case STICK_RAINBOW -> "무지개"; case STICK_OFF -> "꺼짐"; default -> "켜짐"; }
+                + " " + String.format("#%06X", stickRgb) + " (" + applySticks() + "개)");
+        return true;
+    }
+
+    /** 응원봉 상태 정하고, 공연장 사람들 응원봉을 2초마다 계속 맞춤 (새로 받은 응원봉·늦게 온 사람도) */
+    private void setSticks(int mode, int rgb) {
+        stickMode = mode; stickRgb = rgb & 0xFFFFFF;
+        applySticks();
+        if (stickTask == null) stickTask = Bukkit.getScheduler().runTaskTimer(this, () -> { if (stickMode != null) applySticks(); }, 40L, 40L);
+    }
+
+    private static boolean isStick(ItemStack it) {
+        if (it == null || it.getType().isAir()) return false;
+        Material m = it.getType();
+        return m.getKey().toString().equals("pokicos:lightstick") || m.name().equals("POKICOS_LIGHTSTICK");
+    }
+
+    private static boolean hasStick(Player p) {
+        for (ItemStack it : p.getInventory().getContents()) if (isStick(it)) return true;
+        return false;
+    }
+
+    private int applySticks() {
+        if (stickMode == null) return 0;
+        int n = 0;
+        for (Player p : stage != null ? audience() : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+            ItemStack[] inv = p.getInventory().getContents();
+            boolean changed = false;
+            for (ItemStack it : inv) {
+                if (!isStick(it)) continue;
+                ItemMeta meta = it.getItemMeta();
+                int raw = meta.hasCustomModelData() ? meta.getCustomModelData() : 1;
+                int design = raw < (1 << 25) ? Math.max(1, Math.min(7, raw)) : (raw >>> 25) & 7;
+                int want = ((stickMode * 8 + design) << 25) | stickRgb;
+                n++;
+                if (raw == want) continue;
+                meta.setCustomModelData(want);
+                it.setItemMeta(meta);
+                changed = true;
+            }
+            if (changed) p.getInventory().setContents(inv);
+        }
+        return n;
+    }
 
     // ───────── 오프닝 / 피날레 ─────────
     private void opening(String title) {
@@ -549,11 +643,13 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
             if (screenLoc != null) showText(t);
             fireworks("연속");
             startLight("반짝이");
+            setSticks(STICK_BLINK, stickRgb);
         });
     }
 
     private void finale() {
         stopLight();
+        setSticks(STICK_ON, 0xFF8FC7);
         String t = getConfig().getString("messages.finale-title", "&d감사합니다!");
         String sub = getConfig().getString("messages.finale-subtitle", "&bPOKI LIVE");
         fireworks("피날레");
