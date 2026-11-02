@@ -70,6 +70,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
 
     @Override
     public void onEnable() {
+        Bukkit.getScheduler().runTask(this, this::startStickTask); // 공연장 밖 응원봉은 늘 기본으로
         saveDefaultConfig();
         fwKey = new NamespacedKey(this, "show");
         loadPlaces();
@@ -500,7 +501,7 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&e/공연 문구 <내용|끄기> &f/ &e/공연 조명 <" + String.join("|", LIGHTS) + "|끄기>");
         msg(s, "&e/공연 스포트 [닉|끄기] &f/ &e/공연 멈춤");
         msg(s, "&e/공연 응원봉 <색|#RRGGBB|반짝|무지개|켜기|끄기> &f— 공연장 응원봉 전부 같이 바꾸기");
-        msg(s, "&e/공연 응원봉 지급 [닉|전체] &f/ &e/공연 응원봉 놔두기 &f(자동 맞추기 멈춤)");
+        msg(s, "&e/공연 응원봉 지급 [닉|전체] &f/ &e/공연 응원봉 놔두기 &f(전부 기본으로) — 공연장 밖에선 늘 기본");
         msg(s, "&e/공연 티비 [목록|삭제|끄기] &f— 영상 프레임(TV) 보고 치면 등록 (여러 대 가능)");
         msg(s, "&e/공연 틀기 <링크> &f— 치지직 라이브·다시보기·클립·영상 주소 아무거나 (등록된 TV 전부)");
         msg(s, "&e/공연 치지직 [채널ID] &f/ &e/공연 다시보기 <링크> &f/ &e/공연 클립 <링크> &f/ &e/공연 치지직 끄기");
@@ -556,10 +557,10 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
                     n++;
                 }
                 msg(s, "응원봉 " + n + "개 나눠줌 (이미 있는 사람은 건너뜀)");
-                if (stickMode != null) applySticks();
+                applySticks();
                 return true;
             }
-            case "놔두기" -> { stickMode = null; if (stickTask != null) { stickTask.cancel(); stickTask = null; } msg(s, "응원봉 자동 맞추기 멈춤 (지금 상태 그대로)"); return true; }
+            case "놔두기" -> { stickMode = null; applySticks(); msg(s, "응원봉 자동 맞추기 멈춤 — 공연장 응원봉도 기본으로"); return true; }
             case "반짝" -> setSticks(STICK_BLINK, stickRgb);
             case "무지개" -> setSticks(STICK_RAINBOW, stickRgb);
             case "켜기" -> setSticks(STICK_ON, stickRgb);
@@ -581,7 +582,11 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
     private void setSticks(int mode, int rgb) {
         stickMode = mode; stickRgb = rgb & 0xFFFFFF;
         applySticks();
-        if (stickTask == null) stickTask = Bukkit.getScheduler().runTaskTimer(this, () -> { if (stickMode != null) applySticks(); }, 40L, 40L);
+        startStickTask();
+    }
+
+    private void startStickTask() {
+        if (stickTask == null) stickTask = Bukkit.getScheduler().runTaskTimer(this, this::applySticks, 40L, 40L);
     }
 
     private static boolean isStick(ItemStack it) {
@@ -595,10 +600,12 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
         return false;
     }
 
+    /** 공연장 안 응원봉은 지금 상태로, 공연장 밖으로 나간 응원봉은 기본(켜짐·흰색)으로 되돌림 */
     private int applySticks() {
-        if (stickMode == null) return 0;
         int n = 0;
-        for (Player p : stage != null ? audience() : new ArrayList<>(Bukkit.getOnlinePlayers())) {
+        Set<Player> inside = new HashSet<>(stickMode == null ? List.of() : (stage != null ? audience() : new ArrayList<>(Bukkit.getOnlinePlayers())));
+        for (Player p : Bukkit.getOnlinePlayers()) {
+            boolean in = inside.contains(p);
             ItemStack[] inv = p.getInventory().getContents();
             boolean changed = false;
             for (ItemStack it : inv) {
@@ -606,8 +613,8 @@ public final class PokiLive extends JavaPlugin implements Listener, TabCompleter
                 ItemMeta meta = it.getItemMeta();
                 int raw = meta.hasCustomModelData() ? meta.getCustomModelData() : 1;
                 int design = raw < (1 << 25) ? Math.max(1, Math.min(7, raw)) : (raw >>> 25) & 7;
-                int want = ((stickMode * 8 + design) << 25) | stickRgb;
-                n++;
+                int want = in ? ((stickMode * 8 + design) << 25) | stickRgb : design;
+                if (in) n++;
                 if (raw == want) continue;
                 meta.setCustomModelData(want);
                 it.setItemMeta(meta);
