@@ -6,7 +6,7 @@
 | --- | --- |
 | [PokiName](PokiName/) | 한글닉 이름표 · 칭호 · Tab 목록 이름 · Tab 환영 문구 (TAB 대체, 패킷 미사용) |
 | [PokiLinks](PokiLinks/) | `/위키`, `/런처` 같은 클릭 바로가기 링크 |
-| [PokiDonate](PokiDonate/) | 치지직 후원 연동 · 후원 장부 (`/후원`) |
+| [PokiDonate](PokiDonate/) | 치지직 후원 연동 · 후원 장부 (`/후원`) — **현재 안 씀, 서버 배포 목록에서 뺌** |
 | [PokiStats](PokiStats/) | 운영 통계 — 동접 · 접속 기록 · 후원 통계를 통계 서버로 전송 (`/통계`, OP) |
 | [PokiHelp](PokiHelp/) | 문의 접수 — `/문의`, `/신고` 는 운영진한테만, 운영진 알림 · 문의함 GUI (`/문의함`) |
 | [PokiUI](PokiUI/) | 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈 (SimpleShopJS 상점 7개) |
