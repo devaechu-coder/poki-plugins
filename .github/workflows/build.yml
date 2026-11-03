@@ -117,7 +117,7 @@ jobs:
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
       R2: ${{ secrets.R2_ENDPOINT }}
       BUCKET: poki-files
-      PLUGINS: PokiName PokiLinks PokiDonate PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive
+      PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive
     steps:
       - uses: actions/checkout@v4
       - name: 올리기
