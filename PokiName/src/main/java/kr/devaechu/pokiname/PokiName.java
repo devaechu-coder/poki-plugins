@@ -1,6 +1,7 @@
 package kr.devaechu.pokiname;
 
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -420,14 +421,21 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         switch (sub) {
             case "설정", "set" -> {
                 if (a.length < 3) { usage(s, label); return true; }
-                Player t = Bukkit.getPlayerExact(a[1]);
-                if (t == null) { s.sendMessage(color("&c" + a[1] + " 님이 접속해 있지 않아요. (접속 중인 플레이어만 설정 가능)")); return true; }
                 String nick = String.join(" ", java.util.Arrays.copyOfRange(a, 2, a.length));
-                nicks.put(t.getUniqueId(), new String[]{t.getName(), nick});
+                Player t = Bukkit.getPlayerExact(a[1]);
+                UUID id; String name;
+                if (t != null) { id = t.getUniqueId(); name = t.getName(); }
+                else {
+                    // 접속 안 했어도: 이 서버에 한 번이라도 들어온 적 있으면 설정 (다음 접속 때 적용)
+                    OfflinePlayer op = findOffline(a[1]);
+                    if (op == null) { s.sendMessage(color("&c" + a[1] + " 님은 이 서버에 들어온 적이 없어요. (마크닉 철자 확인)")); return true; }
+                    id = op.getUniqueId(); name = op.getName() != null ? op.getName() : a[1];
+                }
+                nicks.put(id, new String[]{name, nick});
                 saveNicks();
-                apply(t);
+                if (t != null) apply(t);
                 refreshHeaders();
-                s.sendMessage(color("&a" + t.getName() + " &f→ &e" + nick + " &f로 설정했어요."));
+                s.sendMessage(color("&a" + name + " &f→ &e" + nick + " &f로 설정했어요." + (t == null ? " &7(지금은 접속 안 함, 다음 접속 때 적용)" : "")));
             }
             case "해제", "remove" -> {
                 if (a.length < 2) { usage(s, label); return true; }
@@ -489,8 +497,16 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         return true;
     }
 
+    /** 서버에 한 번이라도 들어온 플레이어를 이름으로 찾기 (대소문자 무시). 모장에 묻지 않음 */
+    private OfflinePlayer findOffline(String name) {
+        for (OfflinePlayer op : Bukkit.getOfflinePlayers()) {
+            if (op.getName() != null && op.getName().equalsIgnoreCase(name)) return op;
+        }
+        return null;
+    }
+
     private void usage(CommandSender s, String label) {
-        s.sendMessage(color("&e/" + label + " 설정 <마크닉> <한글닉> &7- 한글닉 지정"));
+        s.sendMessage(color("&e/" + label + " 설정 <마크닉> <한글닉> &7- 한글닉 지정 (접속 안 해도 됨)"));
         s.sendMessage(color("&e/" + label + " 해제 <마크닉> &7- 한글닉 지우기"));
         s.sendMessage(color("&e/" + label + " 목록 &7- 등록된 한글닉 보기"));
         s.sendMessage(color("&e/" + label + " 바이옴 &7- 지금 바이옴이 어떻게 읽히는지 (한글 이름 확인용)"));
