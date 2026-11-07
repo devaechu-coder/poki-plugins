@@ -47,6 +47,13 @@ final class Store {
                     tk.doneBy = t.getString("done-by", "");
                     tk.doneAt = t.getLong("done-at");
                     tk.notified = t.getBoolean("notified", true);
+                    tk.target = t.getString("target", "");
+                    tk.reason = t.getString("reason", "");
+                    tk.reply = t.getString("reply", "");
+                    tk.replyBy = t.getString("reply-by", "");
+                    tk.replyAt = t.getLong("reply-at");
+                    tk.replySeen = t.getBoolean("reply-seen", true);
+                    tk.handler = t.getString("handler", "");
                     tickets.put(id, tk);
                     nextId = Math.max(nextId, id + 1);
                 } catch (RuntimeException e) {
@@ -58,7 +65,7 @@ final class Store {
         int days = plugin.getConfig().getInt("keep-done-days", 30);
         if (days > 0) {
             long cut = System.currentTimeMillis() - days * 86_400_000L;
-            if (tickets.values().removeIf(t -> t.done && t.notified && t.doneAt > 0 && t.doneAt < cut)) save();
+            if (tickets.values().removeIf(t -> t.done && t.notified && t.replySeen && t.doneAt > 0 && t.doneAt < cut)) save();
         }
     }
 
@@ -83,6 +90,15 @@ final class Store {
                 y.set(p + "done-at", t.doneAt);
             }
             if (!t.notified) y.set(p + "notified", false);
+            if (!t.target.isEmpty()) y.set(p + "target", t.target);
+            if (!t.reason.isEmpty()) y.set(p + "reason", t.reason);
+            if (!t.reply.isEmpty()) {
+                y.set(p + "reply", t.reply);
+                y.set(p + "reply-by", t.replyBy);
+                y.set(p + "reply-at", t.replyAt);
+                if (!t.replySeen) y.set(p + "reply-seen", false);
+            }
+            if (!t.handler.isEmpty()) y.set(p + "handler", t.handler);
         }
         try {
             y.save(file);

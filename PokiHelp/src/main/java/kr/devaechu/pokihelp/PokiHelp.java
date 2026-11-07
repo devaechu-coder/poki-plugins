@@ -42,9 +42,12 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
     private Store store;
     private Gui gui;
     private final Map<UUID, Long> lastSent = new HashMap<>();
+    /** 포키폰 고객센터(PokiHelpApi)가 쓰는 인스턴스 */
+    static PokiHelp instance;
 
     @Override
     public void onEnable() {
+        instance = this;
         saveDefaultConfig();
         store = new Store(this);
         store.load();
@@ -65,6 +68,7 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
     @Override
     public void onDisable() {
         if (gui != null) gui.closeAll();
+        instance = null;
     }
 
     Store store() {
@@ -163,48 +167,58 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
             if (kind != null) from = 1;
             else kind = Ticket.Kind.OTHER;
         }
-        String msg = ChatColor.stripColor(color(String.join(" ", Arrays.copyOfRange(args, from, args.length))))
-                .replace('§', ' ').trim();
-        if (msg.isEmpty()) {
+        String msg = String.join(" ", Arrays.copyOfRange(args, from, args.length));
+        if (clean(msg).isEmpty()) {
             usage(p, label, forced);
             return;
         }
+        Object r = create(p, kind, msg, "", "");
+        if (r instanceof String err) send(p, "&c" + err);
+    }
+
+    static String clean(String s) {
+        if (s == null) return "";
+        return ChatColor.stripColor(color(s)).replace('§', ' ').replace('\t', ' ').replace('\n', ' ').trim();
+    }
+
+    /**
+     * 문의 하나 만들기 (명령어·포키폰 공통). 성공하면 Ticket, 안 되면 이유(String).
+     * 신고는 target(마크닉)·reason(사유)을 같이 받음 — 설명이 비면 사유를 내용으로.
+     */
+    Object create(Player p, Ticket.Kind kind, String rawMsg, String rawTarget, String rawReason) {
+        String msg = clean(rawMsg), target = clean(rawTarget), reason = clean(rawReason);
+        if (target.length() > 32) target = target.substring(0, 32);
+        if (reason.length() > 16) reason = reason.substring(0, 16);
+        if (msg.isEmpty() && kind == Ticket.Kind.REPORT && !reason.isEmpty()) msg = reason;
         int min = getConfig().getInt("min-length", 2);
         int max = getConfig().getInt("max-length", 200);
-        if (msg.length() < min) {
-            send(p, "&c내용을 " + min + "글자 이상 적어 주세요.");
-            return;
-        }
-        if (msg.length() > max) {
-            send(p, "&c내용이 너무 길어요. (" + msg.length() + "/" + max + "글자)");
-            return;
-        }
+        if (msg.length() < min) return "내용을 " + min + "글자 이상 적어 주세요.";
+        if (msg.length() > max) return "내용이 너무 길어요. (" + msg.length() + "/" + max + "글자)";
         if (!isStaff(p)) {
             long cd = getConfig().getLong("cooldown-seconds", 60) * 1000L;
             long left = lastSent.getOrDefault(p.getUniqueId(), 0L) + cd - System.currentTimeMillis();
-            if (left > 0) {
-                send(p, "&c" + ((left + 999) / 1000) + "초 뒤에 다시 보낼 수 있어요.");
-                return;
-            }
+            if (left > 0) return ((left + 999) / 1000) + "초 뒤에 다시 보낼 수 있어요.";
             int maxOpen = getConfig().getInt("max-open-per-player", 3);
-            if (maxOpen > 0 && store.openCount(p.getUniqueId()) >= maxOpen) {
-                send(p, "&c아직 확인 안 된 문의가 " + maxOpen + "건 있어요. 운영진이 확인하면 다시 보낼 수 있어요. &7(/문의 목록)");
-                return;
-            }
+            if (maxOpen > 0 && store.openCount(p.getUniqueId()) >= maxOpen)
+                return "아직 확인 안 된 문의가 " + maxOpen + "건 있어요. 운영진이 확인하면 다시 보낼 수 있어요.";
         }
         Location l = p.getLocation();
         Ticket t = new Ticket(store.nextId(), p.getUniqueId(), p.getName(), nickOf(p), kind, msg,
                 l.getWorld() == null ? "world" : l.getWorld().getName(), l.getX(), l.getY(), l.getZ(),
                 System.currentTimeMillis());
+        t.target = target;
+        t.reason = reason;
         store.add(t);
         lastSent.put(p.getUniqueId(), t.created);
-        getLogger().info("새 문의 #" + t.id + " [" + t.kind.label + "] " + t.name + " @ " + t.where() + " : " + t.message);
+        getLogger().info("새 문의 #" + t.id + " [" + t.kind.label + "] " + t.name + " @ " + t.where()
+                + (t.target.isEmpty() ? "" : " 대상=" + t.target + " 사유=" + t.reason) + " : " + t.message);
 
         List<Player> staff = onlineStaff();
         staff.remove(p);
         send(p, "&a접수됐어요! &7(#" + t.id + " " + t.kind.label + ") &f"
                 + (staff.isEmpty() ? "지금 접속한 운영진이 없어서, 들어오면 바로 볼 수 있게 남겨뒀어요." : "운영진이 곧 확인할 거예요."));
         for (Player s : staff) alert(s, t);
+        return t;
     }
 
     private void usage(Player p, String label, Ticket.Kind forced) {
@@ -232,7 +246,8 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
         for (Ticket t : list.subList(0, Math.min(5, list.size()))) {
             String head = t.message.length() > 20 ? t.message.substring(0, 20) + "…" : t.message;
             p.sendMessage(color("  &7#" + t.id + " " + t.kind.tag() + " &f" + head + " "
-                    + (t.done ? "&a처리됨" : "&e확인 중")));
+                    + (!t.reply.isEmpty() ? "&a답변 완료" : t.done ? "&a처리됨" : "&e확인 중")));
+            if (!t.reply.isEmpty()) p.sendMessage(color("    &d↳ " + t.replyBy + ": &f" + t.reply));
         }
     }
 
@@ -240,9 +255,11 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
     private void alert(Player s, Ticket t) {
         s.sendMessage(color("&d&m                                        "));
         s.sendMessage(color(PREFIX + "&f새 문의 &7#" + t.id + " " + t.kind.tag() + " &f" + t.who()));
+        if (!t.target.isEmpty()) s.sendMessage(color("  &7대상 &f" + t.target + " &7· 사유 &f" + t.reason));
         for (String l : Gui.wrap(t.message, 40)) s.sendMessage(color("  &e" + l));
         line(s, new TextComponent(color("  ")),
                 button("&a[이동] ", "&f" + t.where(), ClickEvent.Action.RUN_COMMAND, "/문의함 이동 " + t.id),
+                button("&e[답변] ", "&f/문의함 답변 " + t.id + " <내용>", ClickEvent.Action.SUGGEST_COMMAND, "/문의함 답변 " + t.id + " "),
                 button("&b[처리] ", "&f처리 완료로 바꾸고 보낸 사람한테 알림", ClickEvent.Action.RUN_COMMAND, "/문의함 처리 " + t.id),
                 button("&d[문의함]", "&f문의함 열기", ClickEvent.Action.RUN_COMMAND, "/문의함"));
         s.sendMessage(color("&d&m                                        "));
@@ -275,6 +292,15 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
                 store.load();
                 send(sender, "&a다시 불러왔어요. 미처리 " + store.openCount() + "건");
             }
+            case "답변", "reply" -> {
+                Ticket t = args.length > 1 ? byId(args[1]) : null;
+                if (t == null || args.length < 3) {
+                    send(sender, "&f/문의함 답변 <번호> <내용>");
+                    return;
+                }
+                String err = reply(sender, t, String.join(" ", Arrays.copyOfRange(args, 2, args.length)));
+                if (err != null) send(sender, "&c" + err);
+            }
             case "이동", "tp", "처리", "done" -> {
                 Ticket t = args.length > 1 ? byId(args[1]) : null;
                 if (t == null) {
@@ -284,7 +310,7 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
                 if (args[0].equals("처리") || args[0].equals("done")) resolve(sender, t);
                 else if (sender instanceof Player p) teleport(p, t);
             }
-            default -> send(sender, "&f/문의함 &7[목록|이동 <번호>|처리 <번호>|리로드]");
+            default -> send(sender, "&f/문의함 &7[목록|이동 <번호>|답변 <번호> <내용>|처리 <번호>|리로드]");
         }
     }
 
@@ -342,6 +368,44 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
         }
     }
 
+    /** 운영진 답변: 처리 완료로 바꾸고 보낸 사람한테 알림. 문제가 있으면 이유 */
+    String reply(CommandSender staff, Ticket t, String raw) {
+        String text = clean(raw);
+        if (text.isEmpty()) return "답변 내용을 적어 주세요.";
+        int max = Math.max(200, getConfig().getInt("max-length", 200));
+        if (text.length() > max) return "답변이 너무 길어요. (" + text.length() + "/" + max + "글자)";
+        t.reply = text;
+        t.replyBy = staff instanceof Player sp ? nickOf(sp) : staff.getName();
+        t.replyAt = System.currentTimeMillis();
+        t.replySeen = false;
+        if (!t.done) {
+            t.done = true;
+            t.doneBy = staff.getName();
+            t.doneAt = t.replyAt;
+        }
+        Player target = Bukkit.getPlayer(t.uuid);
+        t.notified = target != null;
+        store.save();
+        if (target != null) tellReply(target, t);
+        send(staff, "&a#" + t.id + " 에 답변했어요" + (target != null ? "" : " &7(보낸 사람이 다음에 접속하면 알려줌)"));
+        for (Player s : onlineStaff()) if (s != staff) send(s, "&7" + staff.getName() + " 님이 #" + t.id + " 에 답변");
+        return null;
+    }
+
+    /** 담당하기 (확인 중으로) — 이미 다른 사람이 맡았으면 바꿔 맡음 */
+    void claim(CommandSender staff, Ticket t) {
+        t.handler = staff instanceof Player sp ? nickOf(sp) : staff.getName();
+        store.save();
+        for (Player s : onlineStaff()) if (s != staff) send(s, "&7" + staff.getName() + " 님이 #" + t.id + " 담당");
+    }
+
+    private void tellReply(Player p, Ticket t) {
+        String head = t.message.length() > 20 ? t.message.substring(0, 20) + "…" : t.message;
+        send(p, "&a운영진 답변이 왔어요! &7(#" + t.id + " " + head + ")");
+        p.sendMessage(color("  &d" + t.replyBy + ": &f" + t.reply));
+        p.sendMessage(color("  &7포키폰 고객센터 → 내 문의 내역에서도 볼 수 있어요."));
+    }
+
     void reopen(CommandSender staff, Ticket t) {
         t.done = false;
         t.doneBy = "";
@@ -372,7 +436,7 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
             boolean changed = false;
             for (Ticket t : store.of(p.getUniqueId())) {
                 if (t.done && !t.notified) {
-                    tellDone(p, t);
+                    if (!t.reply.isEmpty()) tellReply(p, t); else tellDone(p, t);
                     t.notified = true;
                     changed = true;
                 }
@@ -394,7 +458,7 @@ public final class PokiHelp extends JavaPlugin implements Listener, TabCompleter
         if (args.length != 1) return List.of();
         List<String> opts = switch (cmd.getName()) {
             case "phelp" -> List.of("버그", "신고", "질문", "기타", "목록");
-            case "phelpbox" -> isStaff(sender) ? List.of("목록", "이동", "처리", "리로드") : List.of();
+            case "phelpbox" -> isStaff(sender) ? List.of("목록", "이동", "답변", "처리", "리로드") : List.of();
             default -> List.of();
         };
         List<String> out = new ArrayList<>();
