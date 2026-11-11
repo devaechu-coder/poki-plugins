@@ -1,0 +1,9 @@
+# 마을 하나에 설치할 수 있는 목장 블록 개수
+limit: 2
+# 막을 블록 (모드 블록 id)
+block: cobblemon:pasture
+messages:
+  not-town: "&c목장 블록은 본인 마을 땅에만 설치할 수 있어요."
+  full: "&c이 마을에는 목장 블록이 이미 {count}개 있어요. (최대 {limit}개)"
+  placed: "&a목장 블록 설치! 우리 마을 목장 {count}/{limit}"
+  no-towny: "&c마을 플러그인을 찾을 수 없어서 목장 블록을 설치할 수 없어요. 운영진에게 알려주세요."
