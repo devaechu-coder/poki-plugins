@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        plugin: [PokiName, PokiLinks, PokiDonate, PokiStats, PokiMaintenance, PokiHelp, PokiUI, PokiMascot, PokiLive]
+        plugin: [PokiName, PokiLinks, PokiDonate, PokiStats, PokiMaintenance, PokiHelp, PokiUI, PokiMascot, PokiLive, PokiPasture]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -117,7 +117,7 @@ jobs:
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
       R2: ${{ secrets.R2_ENDPOINT }}
       BUCKET: poki-files
-      PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive
+      PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive PokiPasture
     steps:
       - uses: actions/checkout@v4
       - name: 올리기

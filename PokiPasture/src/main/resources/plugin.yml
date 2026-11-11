@@ -1,0 +1,14 @@
+name: PokiPasture
+version: ${project.version}
+main: kr.devaechu.pokipasture.PokiPasture
+api-version: '1.21'
+softdepend: [Towny]
+description: 목장 블록은 본인 마을 땅에만, 마을당 정해진 개수까지
+commands:
+  목장블록:
+    description: 우리 마을 목장 블록 개수 보기
+    aliases: [pokipasture]
+permissions:
+  poki.pasture.bypass:
+    description: 목장 블록 제한 무시 (운영진)
+    default: op
