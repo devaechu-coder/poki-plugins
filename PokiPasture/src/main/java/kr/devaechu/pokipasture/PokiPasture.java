@@ -84,10 +84,23 @@ public final class PokiPasture extends JavaPlugin implements Listener {
             p.sendMessage(msg("full").replace("{count}", String.valueOf(list.size())).replace("{limit}", String.valueOf(limit)));
             return;
         }
-        list.add(key(b.getLocation()));
+        // 기록·안내는 다른 플러그인까지 다 통과한 뒤에 (onPlaced)
+    }
+
+    /** 실제로 설치됐을 때만 기록 (다른 플러그인·스크립트가 나중에 막으면 안 셈) */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlaced(BlockPlaceEvent e) {
+        Block b = e.getBlockPlaced();
+        if (!isPasture(b) || towny == null) return;
+        String town = towny.townAt(b.getLocation());
+        if (town == null) return;
+        int limit = getConfig().getInt("limit", 2);
+        List<String> list = alive(town);
+        String k = key(b.getLocation());
+        if (!list.contains(k)) list.add(k);
         data.set("towns." + town, list);
         save();
-        p.sendMessage(msg("placed").replace("{count}", String.valueOf(list.size())).replace("{limit}", String.valueOf(limit)));
+        e.getPlayer().sendMessage(msg("placed").replace("{count}", String.valueOf(list.size())).replace("{limit}", String.valueOf(limit)));
     }
 
     /** 기록된 자리 중 아직 목장 블록이 있는 것만 (없어진 건 지움) */
