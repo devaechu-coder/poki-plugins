@@ -101,7 +101,8 @@ jobs:
               --notes "resourcepacks-poki.zip 안에 넣어서 R2 에 올리기 (sha1 ${{ steps.rp.outputs.sha1 }})"
           fi
 
-  # main 에 올리면(PR 머지) R2(poki-files) poki/server/plugins/<이름>-<버전>.jar + poki/server/plugins.json 갱신
+  # main 에 올리면(PR 머지) R2(poki-files) 베타 칸 poki-beta/server/plugins/<이름>-<버전>.jar + plugins.json 갱신
+  # 실제 서버(poki/)로는 poki-mods 레포 Actions → "출시" 버튼으로 옮김
   # 서버장용 목록 페이지: files.devaechu.com/poki/server/index.html (poki-mods 가 올림)
   # 레포 Secrets: R2_ACCESS_KEY_ID · R2_SECRET_ACCESS_KEY · R2_ENDPOINT
   r2:
@@ -117,6 +118,7 @@ jobs:
       AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
       R2: ${{ secrets.R2_ENDPOINT }}
       BUCKET: poki-files
+      PREFIX: poki-beta
       PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive PokiPasture
     steps:
       - uses: actions/checkout@v4
@@ -125,17 +127,17 @@ jobs:
           s3() { aws s3 --endpoint-url "$R2" "$@"; }
           ver() { python3 -c "import xml.etree.ElementTree as E,sys;r=E.parse(sys.argv[1]).getroot();ns={'m':'http://maven.apache.org/POM/4.0.0'};print(r.find('m:version',ns).text.strip())" "$1/pom.xml"; }
           mkdir -p dist; echo '{}' > plugins.json
-          s3 cp "s3://$BUCKET/poki/server/plugins.json" old.json 2>/dev/null || echo '{}' > old.json
+          s3 cp "s3://$BUCKET/$PREFIX/server/plugins.json" old.json 2>/dev/null || s3 cp "s3://$BUCKET/poki/server/plugins.json" old.json 2>/dev/null || echo '{}' > old.json
           for p in $PLUGINS; do
             v=$(ver $p); f="$p-$v.jar"
             old=$(jq -r --arg p "$p" '.[$p].version // ""' old.json)
             upd=$(jq -r --arg p "$p" '.[$p].updated // ""' old.json)
             if [ "$old" != "$v" ]; then
               gh release download "$p-v$v" -D dist -p "$f" --clobber
-              s3 cp "dist/$f" "s3://$BUCKET/poki/server/plugins/$f" --content-type application/java-archive
-              upd=$(TZ=Asia/Seoul date '+%m/%d %H:%M'); echo "올림 $f"
+              s3 cp "dist/$f" "s3://$BUCKET/$PREFIX/server/plugins/$f" --content-type application/java-archive
+              upd=$(TZ=Asia/Seoul date '+%m/%d %H:%M'); echo "올림 (베타) $f"
             fi
             jq --arg p "$p" --arg v "$v" --arg f "$f" --arg u "$upd" '. + {($p): {version: $v, file: $f, updated: $u}}' plugins.json > t.json && mv t.json plugins.json
           done
           cat plugins.json
-          s3 cp plugins.json "s3://$BUCKET/poki/server/plugins.json" --content-type application/json --cache-control no-cache
+          s3 cp plugins.json "s3://$BUCKET/$PREFIX/server/plugins.json" --content-type application/json --cache-control no-cache
