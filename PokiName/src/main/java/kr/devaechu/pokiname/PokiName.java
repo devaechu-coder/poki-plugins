@@ -80,6 +80,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         titles.load();
 
         Bukkit.getPluginManager().registerEvents(this, this);
+        Bukkit.getPluginManager().registerEvents(new NickArgs(this), this);
         PluginCommand cmd = getCommand("pnick");
         if (cmd != null) {
             cmd.setExecutor(this);
@@ -208,7 +209,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     }
 
     /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
-    private static final int CONFIG_VERSION = 3;
+    private static final int CONFIG_VERSION = 4;
 
     /**
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
@@ -276,6 +277,23 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                     "모든 순위(소지금·코블달러)에서 뺄 사람 — 마크닉 추천(한글닉도 됨). 예: [Dev_Aechu, 서버총괄]",
                     "각 순위의 exclude 와 합쳐짐. 바꾼 뒤 /한글닉 리로드 → 콘솔 \"순위 켜짐 … 제외: [...]\" 로 확인"));
             getLogger().info("config.yml: 순위 공통 제외 목록(rank-exclude) 추가");
+        }
+        // v4: 명령어에 한글닉 쓰기 (한글닉 → 마크닉으로 바꿔 실행)
+        if (!c.contains("nick-commands", true)) {
+            c.set("nick-commands-enabled", true);
+            c.setComments("nick-commands-enabled", List.of(
+                    "명령어에 한글닉을 쓰면 마크닉으로 바꿔서 실행 (예: /tpa 애츄 → /tpa Dev_Aechu). 플레이어가 직접 친 명령어만"));
+            Map<String, List<Integer>> def = new LinkedHashMap<>();
+            def.put("tp", List.of(1, 2));
+            def.put("tpa", List.of(1));
+            def.put("마을 초대", List.of(1));
+            def.put("마을 강퇴", List.of(1));
+            def.put("마을 양도", List.of(1));
+            def.put("cobbledollars query", List.of(1));
+            for (var en : def.entrySet()) c.set("nick-commands." + en.getKey(), en.getValue());
+            c.setComments("nick-commands", List.of(
+                    "\"명령어 낱말\": [바꿀 자리]  — 자리는 명령어 낱말 다음부터 1번. 예: \"마을 초대\": [1] → /마을 초대 <여기>"));
+            getLogger().info("config.yml: 명령어 한글닉(nick-commands) 추가");
         }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();
@@ -562,6 +580,23 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     Titles titles() {
         return titles;
+    }
+
+    /** 한글닉(색 코드 빼고, 대소문자 무시)이 같은 사람들의 마크닉 */
+    List<String> namesForNick(String nick) {
+        List<String> out = new ArrayList<>();
+        String want = nick.trim();
+        if (want.isEmpty()) return out;
+        for (String[] v : nicks.values())
+            if (stripColor(v[1]).trim().equalsIgnoreCase(want)) out.add(v[0]);
+        return out;
+    }
+
+    /** 등록된 한글닉 전부 (색 코드 뺀 것) */
+    List<String> allNicks() {
+        List<String> out = new ArrayList<>();
+        for (String[] v : nicks.values()) out.add(stripColor(v[1]).trim());
+        return out;
     }
 
     // ---------- 저장 ----------
