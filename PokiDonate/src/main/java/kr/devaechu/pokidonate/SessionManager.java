@@ -119,7 +119,7 @@ final class SessionManager {
         if (s.channels.isEmpty() && s.socket != null) s.socket.close("구독할 채널 없음");
     }
 
-    /** /후원 현황 표시용 */
+    /** /운영후원 현황 표시용 */
     String state(String channelId) {
         Shard s = find(channelId);
         if (s == null) return "꺼짐";

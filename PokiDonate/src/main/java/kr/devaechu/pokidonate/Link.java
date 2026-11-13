@@ -17,7 +17,7 @@ public record Link(
     public enum Status {
         /** 정상 */
         ACTIVE,
-        /** 토큰 만료·권한 철회 등으로 다시 /후원 연동 필요 */
+        /** 토큰 만료·권한 철회 등으로 다시 /운영후원 연동 필요 */
         RELINK
     }
 

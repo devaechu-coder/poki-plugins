@@ -1,5 +1,5 @@
 # 포키 치지직 후원 연동
-# 바꾼 뒤 /후원 리로드
+# 바꾼 뒤 /운영후원 리로드
 
 chzzk:
   # 치지직 개발자센터 > 애플리케이션 (poki-donate)
@@ -13,10 +13,10 @@ bridge:
   # GitHub 레포 Secrets 의 POKI_BRIDGE_SECRET 과 똑같은 값
   secret: ''
 
-# /후원 연동 링크 유효 시간 (분)
+# /운영후원 연동 링크 유효 시간 (분)
 link-expire-minutes: 10
 
-# /후원 기록 한 페이지 줄 수
+# /운영후원 기록 한 페이지 줄 수
 record-page-size: 10
 
 # 후원이 들어오면 연동된 스트리머(접속 중) 채팅에 알림

@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 /**
- * /후원 연동 흐름.
+ * /운영후원 연동 흐름.
  *   1. 일회용 state 를 만들어 인증 페이지 링크로 보여준다
  *   2. 스트리머가 치지직에서 허용하면 인증 페이지(Worker)가 코드를 잠깐 보관
  *   3. 여기서 3초마다 인증 페이지에 "이 state 코드 왔어?" 물어보고 가져온다
@@ -79,7 +79,7 @@ final class LinkFlow {
             String state = e.getKey();
             Pending p = e.getValue();
             if (p.expiresAt() < now) {
-                if (pending.remove(state, p)) events.tell(p.uuid(), "&7연동 링크가 만료됐어요. 필요하면 &e/후원 연동 &7을 다시 입력해 주세요.");
+                if (pending.remove(state, p)) events.tell(p.uuid(), "&7연동 링크가 만료됐어요. 필요하면 &e/운영후원 연동 &7을 다시 입력해 주세요.");
                 continue;
             }
             String code = claim(state);
@@ -113,7 +113,7 @@ final class LinkFlow {
         } catch (Exception e) {
             if (e instanceof InterruptedException) Thread.currentThread().interrupt();
             log.warning("[PokiDonate] " + p.playerName() + " 연동 실패: " + e.getMessage());
-            events.tell(p.uuid(), "&c연동에 실패했어요. &e/후원 연동 &c으로 다시 시도해 주세요. &8(" + e.getMessage() + ")");
+            events.tell(p.uuid(), "&c연동에 실패했어요. &e/운영후원 연동 &c으로 다시 시도해 주세요. &8(" + e.getMessage() + ")");
             return;
         }
         if (me.channelId().isEmpty()) {
