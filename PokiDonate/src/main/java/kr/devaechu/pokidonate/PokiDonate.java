@@ -79,7 +79,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
         Bukkit.getPluginManager().registerEvents(new LollipopGuard(), this);
 
         DonateCommand cmd = new DonateCommand(this);
-        var command = getCommand("donate");
+        var command = getCommand("staffdonate");
         if (command != null) {
             command.setExecutor(cmd);
             command.setTabCompleter(cmd);
@@ -93,7 +93,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
         if (db != null) db.close();
     }
 
-    /** /후원 리로드 */
+    /** /운영후원 리로드 */
     void reload() {
         reloadConfig();
         loadRewards();
@@ -108,7 +108,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
         String bridgeSecret = getConfig().getString("bridge.secret", "").trim();
         configured = !clientId.isEmpty() && !clientSecret.isEmpty() && !bridgeUrl.isEmpty() && !bridgeSecret.isEmpty();
         if (!configured) {
-            getLogger().warning("config.yml 의 chzzk.client-secret / bridge.secret 이 비어 있어요. 채워넣고 /후원 리로드 하면 시작해요.");
+            getLogger().warning("config.yml 의 chzzk.client-secret / bridge.secret 이 비어 있어요. 채워넣고 /운영후원 리로드 하면 시작해요.");
             return;
         }
 
@@ -201,7 +201,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
                 donatorId, donatorNick, amount, type, text, st, test, note);
     }
 
-    /** 장부에 쓰고 알림. /후원 테스트 도 여기로 온다 */
+    /** 장부에 쓰고 알림. /운영후원 테스트 도 여기로 온다 */
     void record(Donation don) {
         db.insertDonation(don).whenComplete((id, err) -> {
             if (err != null) {
@@ -288,7 +288,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
                     String head = cmd.length() > 40 ? cmd.substring(0, 40) + "…" : cmd;
                     db.setStatus(d.id(), Donation.Status.FAILED, "명령어 실패: " + head);
                     settled.add(d.id());
-                    tellAdmins("&c후원 #" + d.id() + " 보상 지급 실패 &7(" + plain(p.getName()) + ") &f/후원 재지급 " + d.id());
+                    tellAdmins("&c후원 #" + d.id() + " 보상 지급 실패 &7(" + plain(p.getName()) + ") &f/운영후원 재지급 " + d.id());
                     return "실패 — 명령어를 실행하지 못했어요";
                 }
             }
@@ -359,7 +359,7 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
 
     private void needsRelink(Link l) {
         if (sessions != null) sessions.remove(l.channelId(), null);
-        tell(l.uuid(), "&c치지직 연동이 풀렸어요. &e/후원 연동 &c으로 다시 연결해 주세요.");
+        tell(l.uuid(), "&c치지직 연동이 풀렸어요. &e/운영후원 연동 &c으로 다시 연결해 주세요.");
         tellAdmins("&e" + l.playerName() + " &7(" + l.channelName() + ") &f재연동이 필요해요.");
     }
 

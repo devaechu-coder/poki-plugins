@@ -19,13 +19,13 @@ import static kr.devaechu.pokidonate.PokiDonate.plain;
 import static kr.devaechu.pokidonate.PokiDonate.won;
 
 /**
- * /후원 (= /donate)
- *   연동 · 해제 · 기록                    입주민·운영진 (poki.donate.streamer)
+ * /운영후원 (= /staffdonate) — 운영진 방송 후원 전용 (입주민 후원은 ChzzkLink 가 처리)
+ *   연동 · 해제 · 기록                    운영진 (poki.donate.staff)
  *   기록 <이름|전체> · 현황 · 강제해제 · 테스트 · 리로드   관리자 (poki.donate.admin)
  */
 final class DonateCommand implements TabExecutor {
 
-    private static final String P_STREAMER = "poki.donate.streamer";
+    private static final String P_STREAMER = "poki.donate.staff"; // 운영진 전용 (입주민 후원은 ChzzkLink)
     private static final String P_ADMIN = "poki.donate.admin";
 
     private final PokiDonate plugin;
@@ -67,7 +67,7 @@ final class DonateCommand implements TabExecutor {
         if (!plugin.configured() || plugin.linkFlow() == null) { msg(s, "&e후원 연동이 아직 준비 중이에요. 운영진에게 문의해 주세요."); return; }
         Link l = plugin.links().get(p.getUniqueId());
         if (l != null && l.status() == Link.Status.ACTIVE) {
-            msg(s, "&f이미 치지직 &e" + plain(l.channelName()) + " &f채널과 연동돼 있어요. 바꾸려면 &e/후원 해제 &f먼저 해주세요.");
+            msg(s, "&f이미 치지직 &e" + plain(l.channelName()) + " &f채널과 연동돼 있어요. 바꾸려면 &e/운영후원 해제 &f먼저 해주세요.");
             return;
         }
         String url = plugin.linkFlow().begin(p.getUniqueId(), p.getName());
@@ -78,19 +78,19 @@ final class DonateCommand implements TabExecutor {
     }
 
     private void unlink(CommandSender s, String[] a) {
-        if (!(s instanceof Player p)) { msg(s, "&c게임 안에서만 쓸 수 있어요. 관리자는 /후원 강제해제 <이름>"); return; }
+        if (!(s instanceof Player p)) { msg(s, "&c게임 안에서만 쓸 수 있어요. 관리자는 /운영후원 강제해제 <이름>"); return; }
         Link l = plugin.links().get(p.getUniqueId());
         if (l == null) { msg(s, "&7연동된 채널이 없어요."); return; }
         if (a.length == 0 || !a[0].equals("확인")) {
             msg(s, "&f치지직 &e" + plain(l.channelName()) + " &f연동을 해제할까요? 해제하면 후원이 더 이상 기록되지 않아요.");
-            msg(s, "&f해제하려면 &c/후원 해제 확인 &f을 입력해 주세요. &7(지난 기록은 남아요)");
+            msg(s, "&f해제하려면 &c/운영후원 해제 확인 &f을 입력해 주세요. &7(지난 기록은 남아요)");
             return;
         }
         plugin.unlink(l);
         msg(s, "&a연동을 해제했어요.");
     }
 
-    /** /후원 기록 [이름|전체] [페이지] */
+    /** /운영후원 기록 [이름|전체] [페이지] */
     private void log(CommandSender s, String[] a) {
         boolean isAdmin = s.hasPermission(P_ADMIN);
         if (!isAdmin && !s.hasPermission(P_STREAMER)) { msg(s, "&c입주민·운영진만 볼 수 있어요."); return; }
@@ -115,7 +115,7 @@ final class DonateCommand implements TabExecutor {
         } else {
             if (!(s instanceof Player p)) return;
             Link l = plugin.links().get(p.getUniqueId());
-            if (l == null) { msg(s, "&7연동된 채널이 없어요. &e/후원 연동 &7먼저 해주세요."); return; }
+            if (l == null) { msg(s, "&7연동된 채널이 없어요. &e/운영후원 연동 &7먼저 해주세요."); return; }
             channelId = l.channelId();
             title = l.playerName();
         }
@@ -141,7 +141,7 @@ final class DonateCommand implements TabExecutor {
                 String m = d.message() == null ? "" : d.message().strip();
                 if (!m.isEmpty()) out.add("&8   └ &7" + plain(m.length() > 40 ? m.substring(0, 40) + "…" : m));
             }
-            if (pg < pages) out.add("&7다음 페이지: &e/후원 기록 " + (all ? "전체 " : isAdmin ? title + " " : "") + (pg + 1));
+            if (pg < pages) out.add("&7다음 페이지: &e/운영후원 기록 " + (all ? "전체 " : isAdmin ? title + " " : "") + (pg + 1));
             return out;
         }).whenComplete((lines, err) -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (err != null) { msg(s, "&c기록을 불러오지 못했어요: " + err.getMessage()); return; }
@@ -172,7 +172,7 @@ final class DonateCommand implements TabExecutor {
     }
 
     private void forceUnlink(CommandSender s, String[] a) {
-        if (a.length == 0) { msg(s, "&e/후원 강제해제 <마크닉 또는 채널명>"); return; }
+        if (a.length == 0) { msg(s, "&e/운영후원 강제해제 <마크닉 또는 채널명>"); return; }
         Link l = plugin.links().byName(String.join(" ", a));
         if (l == null) { msg(s, "&c그 이름으로 연동된 스트리머가 없어요."); return; }
         plugin.unlink(l);
@@ -180,9 +180,9 @@ final class DonateCommand implements TabExecutor {
         plugin.tell(l.uuid(), "&e관리자가 치지직 연동을 해제했어요.");
     }
 
-    /** /후원 테스트 <이름> <금액> [메시지] — 진짜 후원처럼 장부에 들어간다 (테스트 표시) */
+    /** /운영후원 테스트 <이름> <금액> [메시지] — 진짜 후원처럼 장부에 들어간다 (테스트 표시) */
     private void test(CommandSender s, String[] a) {
-        if (a.length < 2) { msg(s, "&e/후원 테스트 <마크닉 또는 채널명> <금액> [메시지]"); return; }
+        if (a.length < 2) { msg(s, "&e/운영후원 테스트 <마크닉 또는 채널명> <금액> [메시지]"); return; }
         Link l = plugin.links().byName(a[0]);
         if (l == null) { msg(s, "&c'" + a[0] + "' 으로 연동된 스트리머가 없어요."); return; }
         long amount;
@@ -197,7 +197,7 @@ final class DonateCommand implements TabExecutor {
         msg(s, "&a" + plain(l.playerName()) + " 에게 " + won(amount) + " 테스트 후원을 기록했어요. &7(보상표대로 바로 지급)");
     }
 
-    /** /후원 미지급 [페이지] — 대기·실패 */
+    /** /운영후원 미지급 [페이지] — 대기·실패 */
     private void unpaid(CommandSender s, String[] a) {
         int page = a.length > 0 && a[0].matches("\\d+") ? Math.max(1, Integer.parseInt(a[0])) : 1;
         int size = Math.max(1, plugin.getConfig().getInt("record-page-size", 10));
@@ -212,8 +212,8 @@ final class DonateCommand implements TabExecutor {
                         + " &8← &e" + nick(d.donatorNickname()) + " &a" + won(d.amount()) + " " + statusColor(d.status())
                         + "[" + d.status().label + (d.note() == null ? "" : " · " + plain(d.note())) + "]");
             }
-            if (!rows.isEmpty()) out.add("&7다시 지급: &e/후원 재지급 <번호> &8(대기는 스트리머가 접속하면 자동 지급)");
-            if (page < pages) out.add("&7다음 페이지: &e/후원 미지급 " + (page + 1));
+            if (!rows.isEmpty()) out.add("&7다시 지급: &e/운영후원 재지급 <번호> &8(대기는 스트리머가 접속하면 자동 지급)");
+            if (page < pages) out.add("&7다음 페이지: &e/운영후원 미지급 " + (page + 1));
             return out;
         }).whenComplete((lines, err) -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (err != null) { msg(s, "&c불러오지 못했어요: " + err.getMessage()); return; }
@@ -221,9 +221,9 @@ final class DonateCommand implements TabExecutor {
         }));
     }
 
-    /** /후원 재지급 <번호> */
+    /** /운영후원 재지급 <번호> */
     private void repay(CommandSender s, String[] a) {
-        if (a.length == 0 || !a[0].replace("#", "").matches("\\d+")) { msg(s, "&e/후원 재지급 <장부 번호>"); return; }
+        if (a.length == 0 || !a[0].replace("#", "").matches("\\d+")) { msg(s, "&e/운영후원 재지급 <장부 번호>"); return; }
         long id = Long.parseLong(a[0].replace("#", ""));
         plugin.db().donation(id).whenComplete((d, err) -> Bukkit.getScheduler().runTask(plugin, () -> {
             if (err != null || d == null) { msg(s, "&c#" + id + " 후원을 찾지 못했어요."); return; }
@@ -236,7 +236,7 @@ final class DonateCommand implements TabExecutor {
         }));
     }
 
-    /** /후원 보상표 */
+    /** /운영후원 보상표 */
     private void rewards(CommandSender s) {
         Rewards r = plugin.rewards();
         if (r == null) { msg(s, "&7보상표가 아직 없어요."); return; }
@@ -261,19 +261,19 @@ final class DonateCommand implements TabExecutor {
     private void help(CommandSender s) {
         msg(s, "&7── 치지직 후원 연동 ──");
         if (s.hasPermission(P_STREAMER)) {
-            line(s, "/후원 연동", "내 치지직 채널 연결");
-            line(s, "/후원 기록 [페이지]", "내 방송 후원 기록");
-            line(s, "/후원 해제", "연동 해제");
-            line(s, "/후원 보상표", "금액별 보상 보기");
+            line(s, "/운영후원 연동", "내 치지직 채널 연결");
+            line(s, "/운영후원 기록 [페이지]", "내 방송 후원 기록");
+            line(s, "/운영후원 해제", "연동 해제");
+            line(s, "/운영후원 보상표", "금액별 보상 보기");
         }
         if (s.hasPermission(P_ADMIN)) {
-            line(s, "/후원 기록 <이름|전체> [페이지]", "스트리머별·전체 기록");
-            line(s, "/후원 현황", "연동·연결 상태");
-            line(s, "/후원 강제해제 <이름>", "연동 강제 해제");
-            line(s, "/후원 테스트 <이름> <금액> [메시지]", "가짜 후원 기록·지급");
-            line(s, "/후원 미지급 [페이지]", "대기·실패한 보상 모아 보기");
-            line(s, "/후원 재지급 <번호>", "그 후원 보상 다시 지급");
-            line(s, "/후원 리로드", "config.yml · rewards.yml 다시 읽고 재연결");
+            line(s, "/운영후원 기록 <이름|전체> [페이지]", "스트리머별·전체 기록");
+            line(s, "/운영후원 현황", "연동·연결 상태");
+            line(s, "/운영후원 강제해제 <이름>", "연동 강제 해제");
+            line(s, "/운영후원 테스트 <이름> <금액> [메시지]", "가짜 후원 기록·지급");
+            line(s, "/운영후원 미지급 [페이지]", "대기·실패한 보상 모아 보기");
+            line(s, "/운영후원 재지급 <번호>", "그 후원 보상 다시 지급");
+            line(s, "/운영후원 리로드", "config.yml · rewards.yml 다시 읽고 재연결");
         }
         if (!s.hasPermission(P_STREAMER) && !s.hasPermission(P_ADMIN)) {
             msg(s, "&7입주민·운영진 스트리머가 방송 후원을 서버와 연결하는 기능이에요.");

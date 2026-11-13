@@ -214,7 +214,7 @@ class Db {
         return query("SELECT * FROM donation WHERE streamer_uuid = ? AND status = 'PENDING' ORDER BY id", p -> p.setString(1, uuid.toString()));
     }
 
-    /** 대기·실패 (관리자 /후원 미지급) */
+    /** 대기·실패 (관리자 /운영후원 미지급) */
     CompletableFuture<List<Donation>> unpaid(int limit, int offset) {
         return query("SELECT * FROM donation WHERE status IN ('PENDING','FAILED') ORDER BY id DESC LIMIT ? OFFSET ?",
                 p -> { p.setInt(1, limit); p.setInt(2, offset); });

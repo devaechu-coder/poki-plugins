@@ -119,7 +119,7 @@ jobs:
       R2: ${{ secrets.R2_ENDPOINT }}
       BUCKET: poki-files
       PREFIX: poki-beta
-      PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive PokiPasture
+      PLUGINS: PokiName PokiLinks PokiStats PokiMaintenance PokiHelp PokiUI PokiMascot PokiLive PokiPasture PokiDonate
     steps:
       - uses: actions/checkout@v4
       - name: 올리기
