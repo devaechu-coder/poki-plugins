@@ -209,7 +209,9 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     }
 
     /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
-    private static final int CONFIG_VERSION = 4;
+    private static final int CONFIG_VERSION = 5;
+    /** 귓속말 명령어 (마크 기본 + Essentials 별칭) */
+    private static final String[] WHISPER = {"msg", "tell", "w", "whisper", "m", "t", "pm"};
 
     /**
      * 서버에 이미 있던 옛 config.yml 고치기 (플러그인은 있는 config 를 덮어쓰지 않아서).
@@ -290,10 +292,17 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             def.put("마을 강퇴", List.of(1));
             def.put("마을 양도", List.of(1));
             def.put("cobbledollars query", List.of(1));
+            for (String w : WHISPER) def.put(w, List.of(1));
             for (var en : def.entrySet()) c.set("nick-commands." + en.getKey(), en.getValue());
             c.setComments("nick-commands", List.of(
                     "\"명령어 낱말\": [바꿀 자리]  — 자리는 명령어 낱말 다음부터 1번. 예: \"마을 초대\": [1] → /마을 초대 <여기>"));
             getLogger().info("config.yml: 명령어 한글닉(nick-commands) 추가");
+        }
+        // v5: 귓속말 명령어 (/msg 애츄 안녕)
+        if (c.isConfigurationSection("nick-commands")) {
+            List<String> added = new ArrayList<>();
+            for (String w : WHISPER) if (!c.contains("nick-commands." + w, true)) { c.set("nick-commands." + w, List.of(1)); added.add(w); }
+            if (!added.isEmpty()) getLogger().info("config.yml: 귓속말 명령어 한글닉 추가 → " + added);
         }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();

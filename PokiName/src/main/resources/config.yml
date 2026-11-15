@@ -3,7 +3,7 @@
 # 바꾼 뒤 /한글닉 리로드
 
 # config 형식 버전 (플러그인이 관리 — 건드리지 않기)
-config-version: 4
+config-version: 5
 
 # 머리 위 이름표
 nametag:
@@ -137,3 +137,11 @@ nick-commands:
   마을 강퇴: [1]
   마을 양도: [1]
   cobbledollars query: [1]
+  # 귓속말: /msg 애츄 안녕
+  msg: [1]
+  tell: [1]
+  w: [1]
+  whisper: [1]
+  m: [1]
+  t: [1]
+  pm: [1]
