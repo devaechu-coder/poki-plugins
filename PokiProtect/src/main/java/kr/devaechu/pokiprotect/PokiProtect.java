@@ -56,6 +56,15 @@ public final class PokiProtect extends JavaPlugin implements Listener {
 
     private void readConfig() {
         reloadConfig();
+        // v2: 이동석 추가 (예전 config 에 자동으로)
+        if (getConfig().getInt("config-version", 1) < 2) {
+            List<String> l = new java.util.ArrayList<>(getConfig().getStringList("protected"));
+            if (!l.contains("waystones:*waystone")) l.add("waystones:*waystone");
+            getConfig().set("protected", l);
+            getConfig().set("config-version", 2);
+            saveConfig();
+            getLogger().info("config.yml: 이동석(waystones:*waystone) 보호 추가");
+        }
         prot.clear(); townOnly.clear();
         for (String s : getConfig().getStringList("protected")) prot.add(s.toLowerCase(Locale.ROOT));
         for (String s : getConfig().getStringList("town-only")) townOnly.add(s.toLowerCase(Locale.ROOT));
@@ -85,9 +94,15 @@ public final class PokiProtect extends JavaPlugin implements Listener {
     }
 
     private static boolean in(Set<String> set, Block b) {
-        if (set.contains(id(b))) return true;
+        String id = id(b);
+        if (set.contains(id)) return true;
         String n = b.getType().name().toLowerCase(Locale.ROOT); // Arclight 모드 블록 이름 (cobblemon_pc) 도 맞춰 봄
-        for (String s : set) if (n.equals(s.replace(':', '_'))) return true;
+        for (String s : set) {
+            if (s.indexOf('*') >= 0) {
+                String re = java.util.regex.Pattern.quote(s).replace("*", "\\E.*\\Q");
+                if (id.matches(re) || n.matches(re.replace(":", "_"))) return true;
+            } else if (n.equals(s.replace(':', '_'))) return true;
+        }
         return false;
     }
 
