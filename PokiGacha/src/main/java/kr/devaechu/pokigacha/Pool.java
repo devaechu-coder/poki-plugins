@@ -42,33 +42,14 @@ final class Pool {
     static final class Reward {
         ItemStack item;
         int weight = 1;   // 기본은 전부 같은 확률. 꼭 바꾸고 싶으면 gacha.yml 에서
-        Grade grade = Grade.NORMAL;
         List<String> commands = new ArrayList<>(); // 같이 실행할 명령어 (%player%) — gacha.yml 에서만
 
         Reward copy() {
             Reward r = new Reward();
             r.item = item == null ? null : item.clone();
             r.weight = weight;
-            r.grade = grade;
             r.commands = new ArrayList<>(commands);
             return r;
         }
-    }
-
-    enum Grade {
-        NORMAL("일반", "&f", false), RARE("레어", "&b", true), LEGEND("전설", "&6", true);
-
-        final String ko, color;
-        final boolean announce;
-
-        Grade(String ko, String color, boolean announce) { this.ko = ko; this.color = color; this.announce = announce; }
-
-        static Grade of(String s) {
-            if (s == null) return NORMAL;
-            for (Grade g : values()) if (g.ko.equals(s) || g.name().equalsIgnoreCase(s)) return g;
-            return NORMAL;
-        }
-
-        Grade next() { return values()[(ordinal() + 1) % values().length]; }
     }
 }
