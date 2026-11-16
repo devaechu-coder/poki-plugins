@@ -71,6 +71,15 @@ staff:
     message: ''
     commands: []   # TODO 음식 아이템 id 정해지면
 
+  - amount: 50000
+    name: '전원 치장 뽑기권 1 + 일반도구 뽑기권 2 + 이상한사탕 5'
+    message: ''
+    commands:
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 치장 뽑기권 1장 + 일반도구 뽑기권 2장 + 이상한사탕 5개!","color":"gold"}]'
+      - '뽑기권 지급 @a 치장 1'        # PokiGacha
+      - '뽑기권 지급 @a 일반도구 2'
+      - 'minecraft:give @a cobblemon:rare_candy 5'
+
   - amount: 150000
     name: '지정 스트리머 전설·환상 선택권'
     message: '&6전설·환상 선택권 &f후원! &7지정 스트리머에게 직접 지급해 주세요.'

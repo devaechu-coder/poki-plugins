@@ -1,0 +1,17 @@
+name: PokiGacha
+version: ${project.version}
+main: kr.devaechu.pokigacha.PokiGacha
+api-version: '1.21'
+softdepend: [PlaceholderAPI, PokiName]
+description: 포키 뽑기권 — 인게임에서 편집하는 뽑기, 거래 불가 뽑기권, 치장 중복 방지
+commands:
+  뽑기:
+    description: 뽑기 확률 보기 / 운영진 편집
+    aliases: [pokigacha, gacha]
+  뽑기권:
+    description: 뽑기권 지급 (운영진·콘솔)
+    aliases: [gachaticket]
+permissions:
+  poki.gacha.admin:
+    description: 뽑기 편집·뽑기권 지급
+    default: op
