@@ -1,10 +1,13 @@
+config-version: 2
+
 # 보호할 시설물 (모드 블록 id) — 부수기·폭발·피스톤·불로 못 없앰. 우클릭 사용은 그대로
 #  월드에 원래 있던 것만 보호. 유저가 직접 설치한 건 기록해 두고 보호 안 함 (본인이 다시 캘 수 있게)
-#  블록 id 는 F3 화면 오른쪽 "Targeted Block" 에서 확인
+#  블록 id 는 F3 화면 오른쪽 "Targeted Block" 에서 확인. * 사용 가능 (예: waystones:*waystone)
 protected:
   - simpletms:machine_tm
   - cobblemon:healing_machine
   - cobblemon:pc
+  - waystones:*waystone      # 이동석 (돌·이끼·모래·심층암 등 모든 종류)
 
 # 마을(Towny) 땅에서만 설치할 수 있는 블록 — 야생에는 못 놓음
 town-only:
