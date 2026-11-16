@@ -55,16 +55,19 @@ staff:
       - 'minecraft:give @a cobblemon:potion 2'
 
   - amount: 5000
-    name: '(미정)'
-    message: ''
-    commands: []   # TODO 5천원 정하면 채우기
-
-  - amount: 10000
-    name: '전원 이상한사탕 3개'
+    name: '경험치 2배 부스트 10분'
     message: ''
     commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 이상한사탕 3개!","color":"green"}]'
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"포켓몬 배틀 경험치 2배 10분!","color":"yellow"}]'
+      - '경험치부스트 10'   # PokiEvents 모드 — 켜져 있으면 남은 시간에 10분 더함
+
+  - amount: 10000
+    name: '전원 이상한사탕 3개 + 일반도구 뽑기권 1장'
+    message: ''
+    commands:
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 이상한사탕 3개 + 일반도구 뽑기권 1장!","color":"green"}]'
       - 'minecraft:give @a cobblemon:rare_candy 3'
+      - '뽑기권 지급 @a 일반도구 1'
 
   - amount: 30000
     name: '전원 이로치 확률 증가 음식 1개'
@@ -72,11 +75,11 @@ staff:
     commands: []   # TODO 음식 아이템 id 정해지면
 
   - amount: 50000
-    name: '전원 치장 뽑기권 1 + 일반도구 뽑기권 2 + 이상한사탕 5'
+    name: '전원 치장 뽑기권 2 + 일반도구 뽑기권 2 + 이상한사탕 5'
     message: ''
     commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 치장 뽑기권 1장 + 일반도구 뽑기권 2장 + 이상한사탕 5개!","color":"gold"}]'
-      - '뽑기권 지급 @a 치장 1'        # PokiGacha
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 치장 뽑기권 2장 + 일반도구 뽑기권 2장 + 이상한사탕 5개!","color":"gold"}]'
+      - '뽑기권 지급 @a 치장 2'        # PokiGacha
       - '뽑기권 지급 @a 일반도구 2'
       - 'minecraft:give @a cobblemon:rare_candy 5'
 
