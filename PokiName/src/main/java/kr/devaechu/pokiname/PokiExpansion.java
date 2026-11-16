@@ -18,6 +18,8 @@ import org.bukkit.OfflinePlayer;
  * %pokiname_biome_1% / _2%        긴 바이옴 이름을 두 줄로 나눈 것 (biome.max-length 글자 기준)
  * %pokiname_title%               장착한 칭호 색 글씨 (없으면 빈칸)
  * %pokiname_title_name%          장착한 칭호 이름만 (색 없음)
+ * %pokiname_boost%              경험치 부스트 중이면 "&6⚡ 경험치 2배 &f9:59", 아니면 빈칸 (스코어보드용)
+ * %pokiname_boost_time%         남은 시간만 (9:59), 아니면 빈칸
  */
 final class PokiExpansion extends PlaceholderExpansion {
 
@@ -51,6 +53,11 @@ final class PokiExpansion extends PlaceholderExpansion {
             if (p.equals("title_name")) return plugin.titles().nameOf(player.getUniqueId());
             Titles.Def d = plugin.titles().equipped(player.getUniqueId());
             return d == null ? "" : d.chat();
+        }
+        if (p.equals("boost") || p.equals("boost_time")) {
+            String t = Boost.left();
+            if (t.isEmpty()) return "";
+            return p.equals("boost") ? PokiName.color(plugin.getConfig().getString("boost-line", "&6⚡ 경험치 2배 &f{time}").replace("{time}", t)) : t;
         }
         if (p.startsWith("nick_")) {
             return plugin.nickByName(p.substring(5));
