@@ -17,7 +17,7 @@ import java.util.List;
  * %pokistats_<종류>_week_<n>...%  이번 주 순위 (위와 같은 형식)
  * %pokistats_<종류>_me%           보는 사람의 순위 (n위, 없으면 -)
  * %pokistats_<종류>_me_value%     보는 사람의 값
- * <종류>: capture dex shiny legend battle pvp streak evolve hatch tower raid gym masterball money cobble
+ * <종류>: capture dex shiny legend mythical battle pvp streak evolve hatch tower raid gym masterball money cobble
  *        (한글 이름도 됨: 포획왕, 이로치사냥꾼 …)
  */
 final class StatsExpansion extends PlaceholderExpansion {
