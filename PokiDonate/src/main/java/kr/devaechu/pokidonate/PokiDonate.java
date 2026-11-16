@@ -334,10 +334,25 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
     }
 
     private static String fill(String s, String player, int count, Donation d) {
-        return s.replace("%player%", player)
+        return s.replace("%nick%", korNick(player))
+                .replace("%player%", player)
                 .replace("%count%", String.valueOf(count))
                 .replace("%amount%", String.valueOf(d.amount()))
                 .replace("%donator%", nick(d.donatorNickname()));
+    }
+
+    /** PokiName 한글닉 (PlaceholderAPI %pokiname_nick_<마크닉>%), 없으면 마크닉. tellraw JSON 안에 넣어도 안 깨지게 따옴표·역슬래시 제거 */
+    static String korNick(String name) {
+        String out = name;
+        try {
+            if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI") && Bukkit.getPluginManager().isPluginEnabled("PokiName")) {
+                Class<?> c = Class.forName("me.clip.placeholderapi.PlaceholderAPI");
+                Object r = c.getMethod("setPlaceholders", org.bukkit.OfflinePlayer.class, String.class).invoke(null, null, "%pokiname_nick_" + name + "%");
+                String n = r == null ? "" : org.bukkit.ChatColor.stripColor(org.bukkit.ChatColor.translateAlternateColorCodes('&', r.toString())).trim();
+                if (!n.isEmpty() && !n.startsWith("%")) out = n;
+            }
+        } catch (Throwable ignored) { }
+        return out.replace("\\", "").replace("\"", "");
     }
 
     static long amount(JsonElement e) {

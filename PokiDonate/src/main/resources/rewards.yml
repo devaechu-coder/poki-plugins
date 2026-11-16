@@ -15,7 +15,8 @@ match: exact
 #   per / max-count : (at-least 일 때만 쓸모) 이 금액당 1개, 최대 개수 → %count%
 #
 # 명령어·메시지에 쓸 수 있는 값
-#   %player%  후원 받은 스트리머의 마크 닉네임
+#   %player%  후원 받은 스트리머의 마크 닉네임 (명령어 대상용: give %player% ...)
+#   %nick%    후원 받은 스트리머의 한글닉 (PokiName, 없으면 마크 닉네임) → 채팅 알림용
 #   %count%   개수 (per 를 안 쓰면 1)
 #   %amount%  후원 금액 (숫자만)
 #   %donator% 후원자 치지직 닉네임
@@ -43,14 +44,14 @@ staff:
     name: '전원 포켓몬 회복'
     message: ''
     commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%player%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 포켓몬 회복!","color":"green"}]'
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 포켓몬 회복!","color":"green"}]'
       - 'execute as @a run pokeheal @s'   # pokeheal 은 한 명씩만 받아서 execute 로 전원 돌림
 
   - amount: 3000
     name: '전원 일반 상처약 2개'
     message: ''
     commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%player%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 상처약 2개!","color":"aqua"}]'
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 상처약 2개!","color":"aqua"}]'
       - 'minecraft:give @a cobblemon:potion 2'
 
   - amount: 5000
@@ -62,7 +63,7 @@ staff:
     name: '전원 이상한사탕 3개'
     message: ''
     commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%player%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 이상한사탕 3개!","color":"green"}]'
+      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 이상한사탕 3개!","color":"green"}]'
       - 'minecraft:give @a cobblemon:rare_candy 3'
 
   - amount: 30000
