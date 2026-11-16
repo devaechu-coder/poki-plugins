@@ -31,7 +31,7 @@ import java.util.UUID;
 final class HofGui implements Listener {
 
     /** 메인 화면 순위 아이콘 자리 (45칸) */
-    private static final int[] MAIN_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 31};
+    private static final int[] MAIN_SLOTS = {10, 11, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 24, 25, 30, 32};
     /** 순위 화면 1~10위 자리 (54칸) */
     private static final int[] TOP_SLOTS = {4, 12, 14, 28, 29, 30, 31, 32, 33, 34};
     private static final int BACK = 45, ME = 49, TOGGLE = 53;
