@@ -100,7 +100,6 @@ final class Store {
                     Pool.Reward r = new Pool.Reward();
                     r.item = readItem(tmp);
                     r.weight = Math.max(0, tmp.getInt("weight", 1));
-                    r.grade = Pool.Grade.of(tmp.getString("grade"));
                     r.commands = new ArrayList<>(tmp.getStringList("commands"));
                     if (r.item == null && r.commands.isEmpty()) continue;
                     p.rewards.add(r);
@@ -150,7 +149,7 @@ final class Store {
         YamlConfiguration y = new YamlConfiguration();
         y.options().setHeader(List.of(
                 "포키 뽑기 설정 — 인게임 /뽑기 편집 <종류> 로 고치는 걸 추천 (여기를 고쳤으면 /뽑기 리로드)",
-                "weight = 확률 무게 (기본 1 = 전부 같은 확률, 2 면 두 배 잘 나옴), grade = 일반/레어/전설 (레어 이상은 전체 알림)",
+                "weight = 확률 무게 (기본 1 = 전부 같은 확률, 2 면 두 배 잘 나옴)",
                 "no-duplicate = 이미 옷장에 있는 치장은 안 나옴, fallback = 다 가졌으면 대신 줄 뽑기권",
                 "commands = 같이 실행할 명령어 (%player% = 마크닉) — 아이템 없이 명령어만 있는 보상도 됨"));
         for (Pool p : pools.values()) {
@@ -167,7 +166,6 @@ final class Store {
                 YamlConfiguration tmp = new YamlConfiguration();
                 if (r.item != null) writeItem(tmp, r.item);
                 tmp.set("weight", r.weight);
-                tmp.set("grade", r.grade.ko);
                 if (!r.commands.isEmpty()) tmp.set("commands", r.commands);
                 list.add(tmp.getValues(false));
             }

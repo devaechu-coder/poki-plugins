@@ -30,7 +30,7 @@ import java.util.UUID;
 /**
  * 포키 뽑기권.
  *  /뽑기권 지급 <플레이어|@a> <종류> [개수]  ← 후원 연동(콘솔)에서 씀. 접속 안 했으면 다음 접속 때 지급
- *  뽑기권 들고 우클릭 → 연출 → 보상. 보상은 전부 같은 확률, 레어·전설은 전체 알림
+ *  뽑기권 들고 우클릭 → 연출 → 보상. 보상은 전부 같은 확률
  *  /뽑기 편집 <종류>  ← 운영진이 인게임 상자 화면에서 보상 넣기·빼기
  */
 public final class PokiGacha extends JavaPlugin implements Listener {
@@ -86,7 +86,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                 give(p, fb, pool.fallbackCount);
                 p.sendMessage(c(PREFIX + "&a" + Gui.ChatStrip.strip(pool.display) + "의 보상을 전부 가지고 있어서 &f" + Gui.ChatStrip.strip(fb.display) + " " + pool.fallbackCount + "장&a으로 바꿔 드렸어요!"));
                 p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.2f);
-                log(p, pool, "(전부 보유 → " + fb.name + " 뽑기권 " + pool.fallbackCount + ")", null);
+                log(p, pool, "(전부 보유 → " + fb.name + " 뽑기권 " + pool.fallbackCount + ")");
             } else if (pool.noDuplicate && !pool.rewards.isEmpty()) {
                 p.sendMessage(c(PREFIX + "&e이 뽑기의 보상을 전부 가지고 있어요! 운영진에게 문의해 주세요."));
             } else {
@@ -145,25 +145,18 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         for (String cmd : r.commands) {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), cmd.replace("%player%", p.getName()));
         }
-        String label = r.grade.color + name + (amount > 1 ? " &fx" + amount : "");
-        p.sendMessage(c(PREFIX + label + " &f당첨!"));
-        if (r.grade.announce) {
-            Bukkit.broadcastMessage(c("&d✨ [뽑기] &f" + Util.nick(p) + "님이 " + Gui.ChatStrip.strip(pool.display).replace(" 뽑기권", "") + " 뽑기에서 "
-                    + r.grade.color + "[" + r.grade.ko + "] " + name + "&f 획득!"));
-            for (Player o : Bukkit.getOnlinePlayers()) o.playSound(o.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 0.5f, 1.2f);
-        } else {
-            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.5f);
-        }
-        log(p, pool, name + (amount > 1 ? " x" + amount : ""), r.grade);
+        p.sendMessage(c(PREFIX + "&e" + name + (amount > 1 ? " &fx" + amount : "") + " &f당첨!"));
+        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 0.7f, 1.5f);
+        log(p, pool, name + (amount > 1 ? " x" + amount : ""));
     }
 
-    private void log(Player p, Pool pool, String what, Pool.Grade g) {
+    private void log(Player p, Pool pool, String what) {
         File f = new File(getDataFolder(), "rolls.csv");
         boolean head = !f.exists();
         try (PrintWriter w = new PrintWriter(new FileWriter(f, StandardCharsets.UTF_8, true))) {
-            if (head) w.println("시각,uuid,마크닉,뽑기,결과,등급");
+            if (head) w.println("시각,uuid,마크닉,뽑기,결과");
             w.println(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()) + "," + p.getUniqueId() + "," + p.getName() + ","
-                    + pool.name + "," + what.replace(",", " ") + "," + (g == null ? "" : g.ko));
+                    + pool.name + "," + what.replace(",", " "));
         } catch (IOException e) {
             getLogger().warning("rolls.csv 기록 실패: " + e);
         }
@@ -183,7 +176,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         p.sendMessage(c("&7── 테스트 " + n + "번 &f" + pool.name + " &7(중복 금지는 빼고 계산) ──"));
         for (Map.Entry<Pool.Reward, Integer> e : count.entrySet()) {
             Pool.Reward r = e.getKey();
-            p.sendMessage(c(" " + r.grade.color + (r.item != null ? Util.name(r.item) : "명령어") + " &7" + e.getValue() + "번 &8(" + String.format("%.1f", e.getValue() * 100.0 / n) + "%)"));
+            p.sendMessage(c(" &f" + (r.item != null ? Util.name(r.item) : "명령어") + " &7" + e.getValue() + "번 &8(" + String.format("%.1f", e.getValue() * 100.0 / n) + "%)"));
         }
     }
 

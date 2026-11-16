@@ -67,7 +67,7 @@ final class Gui implements Listener {
             List<String> lore = m.hasLore() ? new ArrayList<>(m.getLore()) : new ArrayList<>();
             if (!lore.isEmpty()) lore.add("");
             double pct = total > 0 ? r.weight * 100.0 / total : 0;
-            lore.add(Util.color("&7확률 &f" + String.format("%.1f", pct) + "% &8· " + r.grade.color + r.grade.ko));
+            lore.add(Util.color("&7확률 &f" + String.format("%.1f", pct) + "%"));
             if (r.item == null) lore.add(Util.color("&7명령어 보상"));
             for (String s : extra) lore.add(Util.color(s));
             m.setLore(lore);
@@ -107,7 +107,7 @@ final class Gui implements Listener {
         int total = d.totalWeight();
         for (int i = 0; i < d.rewards.size() && i < 45; i++) {
             Pool.Reward r = d.rewards.get(i);
-            h.inv.setItem(i, shown(r, total, List.of("", "&e클릭&7: 등급 바꾸기 (일반→레어→전설)", "&eQ&7: 빼기", "&8레어·전설은 뽑히면 전체 알림")));
+            h.inv.setItem(i, shown(r, total, List.of("", "&eQ&7: 빼기", "&e아이템 들고 클릭&7: 그 아이템으로 바꾸기")));
         }
         for (int i = 45; i < 54; i++) h.inv.setItem(i, button(Material.GRAY_STAINED_GLASS_PANE, " "));
         h.inv.setItem(SAVE, button(Material.LIME_CONCRETE, "&a&l저장", "&7보상 " + d.rewards.size() + "개 · 전부 같은 확률"));
@@ -122,7 +122,7 @@ final class Gui implements Listener {
         h.inv.setItem(RENAME, button(Material.NAME_TAG, "&e뽑기권 이름 바꾸기", "&7지금: " + d.display, "", "&e클릭&7 → 채팅에 새 이름 (&색 코드 가능)"));
         h.inv.setItem(INFO, button(Material.BOOK, "&f사용법",
                 "&e인벤토리 아이템 Shift+클릭 &7또는", "&e들고 빈칸 클릭&7 → 보상으로 추가 (복사본, 내 아이템은 그대로)",
-                "&e보상 클릭&7 → 등급  &eQ&7 → 빼기", "", "&7확률은 전부 똑같아요 (보상 개수로 나눔)",
+                "&eQ&7 → 빼기  &e아이템 들고 보상 클릭&7 → 교체", "", "&7확률은 전부 똑같아요 (보상 개수로 나눔)",
                 "&7저장하면 이전 설정은 백업 → &f/뽑기 되돌리기"));
         h.inv.setItem(NODUP, button(d.noDuplicate ? Material.LIME_DYE : Material.GRAY_DYE,
                 "&f치장 중복 금지: " + (d.noDuplicate ? "&a켜짐" : "&7꺼짐"), "&7켜면 옷장에 이미 있는 치장은 안 나와요", "", "&e클릭&7: 켜기/끄기"));
@@ -157,9 +157,6 @@ final class Gui implements Listener {
                 click(p);
             } else if (cursor != null && !cursor.getType().isAir()) {
                 r.item = cursor.clone(); // 들고 클릭: 아이템 바꿔치기
-                click(p);
-            } else {
-                r.grade = r.grade.next();
                 click(p);
             }
             fillEditor(h);
@@ -351,8 +348,7 @@ final class Gui implements Listener {
         if (h.task != null) h.task.cancel();
         rolling.remove(h.player.getUniqueId());
         // 결과 칸 강조
-        ItemStack mark = button(h.result.grade == Pool.Grade.LEGEND ? Material.ORANGE_STAINED_GLASS_PANE
-                : h.result.grade == Pool.Grade.RARE ? Material.LIGHT_BLUE_STAINED_GLASS_PANE : Material.WHITE_STAINED_GLASS_PANE, " ");
+        ItemStack mark = button(Material.LIME_STAINED_GLASS_PANE, " ");
         for (int i : new int[]{0, 1, 2, 3, 5, 6, 7, 8, 18, 19, 20, 21, 23, 24, 25, 26}) h.inv.setItem(i, mark);
         plugin.grant(h.player, h.pool, h.result);
     }
