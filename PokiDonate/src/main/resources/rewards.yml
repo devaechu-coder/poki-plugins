@@ -40,20 +40,6 @@ resident: []
 # 운영진 (poki.donate.staff) — 서버 전체 이벤트. 후원자 이름은 안 띄움
 #   @a = 접속한 모든 사람. 비어 있는 칸([])은 '실패 · 명령어 미설정' + 관리자 알림 → 직접 처리
 staff:
-  - amount: 1000
-    name: '전원 포켓몬 회복'
-    message: ''
-    commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 포켓몬 회복!","color":"green"}]'
-      - 'execute as @a run pokeheal @s'   # pokeheal 은 한 명씩만 받아서 execute 로 전원 돌림
-
-  - amount: 3000
-    name: '전원 일반 상처약 2개'
-    message: ''
-    commands:
-      - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%nick%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 상처약 2개!","color":"aqua"}]'
-      - 'minecraft:give @a cobblemon:potion 2'
-
   - amount: 5000
     name: '경험치 2배 부스트 10분'
     message: ''
@@ -69,11 +55,6 @@ staff:
       - 'minecraft:give @a cobblemon:rare_candy 3'
       - '뽑기권 지급 @a 일반도구 1'
 
-  - amount: 30000
-    name: '전원 이로치 확률 증가 음식 1개'
-    message: ''
-    commands: []   # TODO 음식 아이템 id 정해지면
-
   - amount: 50000
     name: '전원 치장 뽑기권 2 + 일반도구 뽑기권 2 + 이상한사탕 5'
     message: ''
@@ -82,8 +63,3 @@ staff:
       - '뽑기권 지급 @a 치장 2'        # PokiGacha
       - '뽑기권 지급 @a 일반도구 2'
       - 'minecraft:give @a cobblemon:rare_candy 5'
-
-  - amount: 150000
-    name: '지정 스트리머 전설·환상 선택권'
-    message: '&6전설·환상 선택권 &f후원! &7지정 스트리머에게 직접 지급해 주세요.'
-    commands: []   # 운영진이 직접 지급 → 장부에 '실패·미설정' 으로 남아서 /운영후원 미지급 에서 확인
