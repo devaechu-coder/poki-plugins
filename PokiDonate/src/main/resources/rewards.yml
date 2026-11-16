@@ -44,7 +44,7 @@ staff:
     message: ''
     commands:
       - 'minecraft:tellraw @a [{"text":"[운영진 후원] ","color":"light_purple","bold":true},{"text":"%player%님 방송 후원으로 ","color":"white","bold":false},{"text":"전원 포켓몬 회복!","color":"green"}]'
-      - 'pokeheal @a'   # 서버에서 @a 되는지 한 번 확인 (안 되면 사람마다 실행하도록 바꿔야 함)
+      - 'execute as @a run pokeheal @s'   # pokeheal 은 한 명씩만 받아서 execute 로 전원 돌림
 
   - amount: 3000
     name: '전원 일반 상처약 2개'
