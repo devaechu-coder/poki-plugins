@@ -282,13 +282,14 @@ public final class PokiDonate extends JavaPlugin implements SessionManager.Sink,
                     }
                 } catch (RuntimeException ex) {
                     getLogger().log(Level.WARNING, "후원 #" + d.id() + " 보상 명령어 오류: " + cmd, ex);
+                    tellAdmins("&c오류: " + ex.getClass().getSimpleName() + (ex.getMessage() == null ? "" : " — " + ex.getMessage()));
                     ok = false;
                 }
                 if (!ok) {
                     String head = cmd.length() > 40 ? cmd.substring(0, 40) + "…" : cmd;
                     db.setStatus(d.id(), Donation.Status.FAILED, "명령어 실패: " + head);
                     settled.add(d.id());
-                    tellAdmins("&c후원 #" + d.id() + " 보상 지급 실패 &7(" + plain(p.getName()) + ") &f/운영후원 재지급 " + d.id());
+                    tellAdmins("&c후원 #" + d.id() + " 보상 지급 실패 &7(" + plain(p.getName()) + ") 막힌 명령어: &f" + head + " &7→ 고친 뒤 &f/운영후원 재지급 " + d.id());
                     return "실패 — 명령어를 실행하지 못했어요";
                 }
             }
