@@ -1,0 +1,14 @@
+name: PokiProtect
+version: ${project.version}
+main: kr.devaechu.pokiprotect.PokiProtect
+api-version: '1.21'
+softdepend: [Towny]
+description: 야생 시설물(기술머신 기계·회복 머신·PC) 보호 + 포켓스낵은 마을에서만
+commands:
+  시설보호:
+    description: 설정 다시 읽기 / 보호 블록 목록
+    aliases: [pokiprotect]
+permissions:
+  poki.protect.bypass:
+    description: 보호 시설물 부수기·포켓스낵 아무 데나 설치 (운영진)
+    default: op
