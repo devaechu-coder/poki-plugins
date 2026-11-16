@@ -232,6 +232,28 @@ public final class PokiGacha extends JavaPlugin implements Listener {
     // 명령어
     // =====================================================================
 
+    /** @a·@s·@r·@p 는 직접 처리 (Arclight 에서 Bukkit.selectEntities 가 내부 오류를 냄), 나머지만 selectEntities */
+    private List<Player> targets(CommandSender s, String sel) {
+        List<Player> online = new ArrayList<>(Bukkit.getOnlinePlayers());
+        switch (sel.toLowerCase(java.util.Locale.ROOT)) {
+            case "@a": return online;
+            case "@s": return s instanceof Player p ? List.of(p) : List.of();
+            case "@r": return online.isEmpty() ? List.of() : List.of(online.get(rnd.nextInt(online.size())));
+            case "@p": {
+                if (s instanceof Player p) return List.of(p);
+                return online.isEmpty() ? List.of() : List.of(online.get(0));
+            }
+            default:
+                try {
+                    List<Player> out = new ArrayList<>();
+                    for (org.bukkit.entity.Entity en : Bukkit.selectEntities(s, sel)) if (en instanceof Player pl) out.add(pl);
+                    return out;
+                } catch (Throwable t) {
+                    return null;
+                }
+        }
+    }
+
     private Pool poolArg(CommandSender s, String name) {
         Pool p = store.pools.get(name);
         if (p == null) {
@@ -243,6 +265,16 @@ public final class PokiGacha extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender s, Command cmd, String label, String[] a) {
+        try {
+            return run(s, cmd, a);
+        } catch (Throwable t) {
+            getLogger().log(java.util.logging.Level.WARNING, "명령어 오류: /" + label + " " + String.join(" ", a), t);
+            s.sendMessage(c(PREFIX + "&c오류: " + t.getClass().getSimpleName() + (t.getMessage() == null ? "" : " — " + t.getMessage()) + " &7(서버 로그에 자세히)"));
+            return true;
+        }
+    }
+
+    private boolean run(CommandSender s, Command cmd, String[] a) {
         boolean admin = s.hasPermission("poki.gacha.admin");
         if (cmd.getName().equals("뽑기권")) {
             if (!admin) { s.sendMessage(c(PREFIX + "&c운영진만 쓸 수 있어요.")); return true; }
@@ -255,16 +287,12 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                 if (a[1].startsWith("@")) {
                     // @a 등 선택자: 접속한 사람 각자에게 (운영진 후원 '전원 지급'용)
                     int given = 0;
-                    try {
-                        for (org.bukkit.entity.Entity en : Bukkit.selectEntities(s, a[1])) {
-                            if (!(en instanceof Player t)) continue;
-                            give(t, pool, n);
-                            t.sendMessage(c(PREFIX + "&a" + Gui.ChatStrip.strip(pool.display) + " " + n + "장을 받았어요! &7들고 우클릭"));
-                            given++;
-                        }
-                    } catch (IllegalArgumentException ex) {
-                        s.sendMessage(c(PREFIX + "&c선택자 오류: " + ex.getMessage()));
-                        return true;
+                    List<Player> targets = targets(s, a[1]);
+                    if (targets == null) { s.sendMessage(c(PREFIX + "&c선택자를 못 읽었어요: " + a[1] + " &7(@a 를 써 주세요)")); return true; }
+                    for (Player t : targets) {
+                        give(t, pool, n);
+                        t.sendMessage(c(PREFIX + "&a" + Gui.ChatStrip.strip(pool.display) + " " + n + "장을 받았어요! &7들고 우클릭"));
+                        given++;
                     }
                     s.sendMessage(c(PREFIX + given + "명에게 " + pool.name + " 뽑기권 " + n + "장씩 지급"));
                     return true;
