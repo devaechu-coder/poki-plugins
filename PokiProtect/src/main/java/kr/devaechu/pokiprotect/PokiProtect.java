@@ -65,6 +65,16 @@ public final class PokiProtect extends JavaPlugin implements Listener {
             saveConfig();
             getLogger().info("config.yml: 이동석(waystones:*waystone) 보호 추가");
         }
+        // v3: 이동석을 모드 상관없이 (*waystone*)
+        if (getConfig().getInt("config-version", 1) < 3) {
+            List<String> l = new java.util.ArrayList<>(getConfig().getStringList("protected"));
+            l.remove("waystones:*waystone");
+            if (!l.contains("*waystone*")) l.add("*waystone*");
+            getConfig().set("protected", l);
+            getConfig().set("config-version", 3);
+            saveConfig();
+            getLogger().info("config.yml: 이동석 보호를 *waystone* 으로 넓힘");
+        }
         prot.clear(); townOnly.clear();
         for (String s : getConfig().getStringList("protected")) prot.add(s.toLowerCase(Locale.ROOT));
         for (String s : getConfig().getStringList("town-only")) townOnly.add(s.toLowerCase(Locale.ROOT));
@@ -151,10 +161,13 @@ public final class PokiProtect extends JavaPlugin implements Listener {
     public void onBreak(BlockBreakEvent e) {
         Block b = e.getBlock();
         if (!in(prot, b)) return;
-        if (guarded(b) && !e.getPlayer().hasPermission("poki.protect.bypass")) {
-            e.setCancelled(true);
-            e.getPlayer().sendMessage(msg("protected"));
+        if (!guarded(b)) return;
+        if (e.getPlayer().hasPermission("poki.protect.bypass")) {
+            e.getPlayer().sendMessage(ChatColor.GRAY + "[시설보호] 보호 시설물이지만 운영진이라 부서져요 (" + id(b) + ")");
+            return;
         }
+        e.setCancelled(true);
+        e.getPlayer().sendMessage(msg("protected"));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
