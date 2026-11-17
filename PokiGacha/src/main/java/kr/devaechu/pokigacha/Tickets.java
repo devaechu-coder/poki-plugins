@@ -31,7 +31,7 @@ import java.util.UUID;
 
 /**
  * 뽑기권 아이템 — 만들기·알아보기 + 거래 막기.
- * 뽑기권은 자기 인벤토리 밖으로 못 나감: 버리기·상자·거래창·액자 X, 죽어도 안 떨어지고 부활하면 돌려받음.
+ * config ticket-tradable: false 일 때만 막음 — 자기 인벤토리 밖으로 못 나감: 버리기·상자·거래창·액자 X, 죽어도 안 떨어지고 부활하면 돌려받음.
  */
 final class Tickets implements Listener {
     private final PokiGacha plugin;
@@ -53,7 +53,7 @@ final class Tickets implements Listener {
             lore.add(Util.color("&7들고 &f우클릭&7해서 뽑기"));
             lore.add(Util.color("&7확률 보기: &f/뽑기 확률 " + p.name));
             if (p.noDuplicate) lore.add(Util.color("&a이미 가진 치장은 안 나와요"));
-            lore.add(Util.color("&8거래·버리기 불가"));
+            if (!plugin.getConfig().getBoolean("ticket-tradable", true)) lore.add(Util.color("&8거래·버리기 불가"));
             m.setLore(lore);
             m.getPersistentDataContainer().set(key, PersistentDataType.STRING, p.name);
             it.setItemMeta(m);
@@ -68,6 +68,9 @@ final class Tickets implements Listener {
     }
 
     boolean is(ItemStack it) { return poolOf(it) != null; }
+
+    /** 거래 막기 꺼짐(config ticket-tradable: true)이면 막는 이벤트들은 아무것도 안 함 */
+    private boolean free() { return plugin.getConfig().getBoolean("ticket-tradable", true); }
 
     private void deny(Player p) {
         p.sendMessage(Util.color(PokiGacha.PREFIX + "&c뽑기권은 거래하거나 옮길 수 없어요."));
@@ -93,6 +96,7 @@ final class Tickets implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onDrop(PlayerDropItemEvent e) {
+        if (free()) return;
         if (is(e.getItemDrop().getItemStack())) {
             e.setCancelled(true);
             deny(e.getPlayer());
@@ -101,6 +105,7 @@ final class Tickets implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onClick(InventoryClickEvent e) {
+        if (free()) return;
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (e.getView().getTopInventory().getHolder() instanceof Gui.Holder) return; // 우리 화면은 따로 처리
         InventoryType top = e.getView().getTopInventory().getType();
@@ -121,6 +126,7 @@ final class Tickets implements Listener {
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onDrag(InventoryDragEvent e) {
+        if (free()) return;
         if (!is(e.getOldCursor())) return;
         if (e.getView().getTopInventory().getHolder() instanceof Gui.Holder) return;
         InventoryType top = e.getView().getTopInventory().getType();
@@ -138,7 +144,7 @@ final class Tickets implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onEntity(PlayerInteractEntityEvent e) {
         ItemStack it = e.getHand() == EquipmentSlot.HAND ? e.getPlayer().getInventory().getItemInMainHand() : e.getPlayer().getInventory().getItemInOffHand();
-        if (is(it)) {
+        if (is(it) && !free()) {
             e.setCancelled(true); // 액자·갑옷 거치대·주민 거래 등
             plugin.roll(e.getPlayer(), poolOf(it));
         }
@@ -146,6 +152,7 @@ final class Tickets implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onDeath(PlayerDeathEvent e) {
+        if (free()) return;
         List<ItemStack> kept = new ArrayList<>();
         for (Iterator<ItemStack> it = e.getDrops().iterator(); it.hasNext(); ) {
             ItemStack s = it.next();
