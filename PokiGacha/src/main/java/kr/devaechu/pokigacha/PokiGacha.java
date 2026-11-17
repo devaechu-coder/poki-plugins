@@ -43,6 +43,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
 
     @Override
     public void onEnable() {
+        saveDefaultConfig();
         store = new Store(this);
         store.load();
         tickets = new Tickets(this);
@@ -368,6 +369,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                 if (!admin) return true;
                 gui.drafts.clear();
                 store.load();
+                reloadConfig();
                 s.sendMessage(c(PREFIX + "&agacha.yml 을 다시 읽었어요. (" + store.pools.size() + "종류)"));
             }
             default -> {

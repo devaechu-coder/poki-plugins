@@ -82,11 +82,13 @@ final class Gui implements Listener {
 
     static final class EditorHolder extends Holder {
         final Pool draft;
+        int page;          // 0부터, 한 쪽에 45개
         boolean switching; // 이름 바꾸기 등으로 잠깐 닫는 중
         EditorHolder(Pool draft) { this.draft = draft; }
     }
 
-    private static final int SAVE = 45, CANCEL = 46, TICKET = 47, RENAME = 48, INFO = 49, NODUP = 50, FALLBACK = 51, TEST = 52;
+    private static final int SAVE = 45, CANCEL = 46, TICKET = 47, RENAME = 48, PREV = 49, NEXT = 50, NODUP = 51, FALLBACK = 52, TEST = 53;
+    static final int PER_PAGE = 45, MAX_REWARDS = 450;
 
     void openEditor(Player p, Pool pool) {
         if (pool.editor != null && !pool.editor.equals(p.getName())) {
@@ -105,12 +107,17 @@ final class Gui implements Listener {
         Pool d = h.draft;
         h.inv.clear();
         int total = d.totalWeight();
-        for (int i = 0; i < d.rewards.size() && i < 45; i++) {
-            Pool.Reward r = d.rewards.get(i);
+        int pages = Math.max(1, (d.rewards.size() + PER_PAGE) / PER_PAGE); // 마지막 쪽에 빈칸이 늘 있게
+        if (h.page >= pages) h.page = pages - 1;
+        int base = h.page * PER_PAGE;
+        for (int i = 0; i < PER_PAGE && base + i < d.rewards.size(); i++) {
+            Pool.Reward r = d.rewards.get(base + i);
             h.inv.setItem(i, shown(r, total, List.of("", "&eQ&7: 빼기", "&e아이템 들고 클릭&7: 그 아이템으로 바꾸기")));
         }
         for (int i = 45; i < 54; i++) h.inv.setItem(i, button(Material.GRAY_STAINED_GLASS_PANE, " "));
-        h.inv.setItem(SAVE, button(Material.LIME_CONCRETE, "&a&l저장", "&7보상 " + d.rewards.size() + "개 · 전부 같은 확률"));
+        h.inv.setItem(SAVE, button(Material.LIME_CONCRETE, "&a&l저장", "&7보상 " + d.rewards.size() + "개 · 전부 같은 확률", "",
+                "&e인벤토리 아이템 Shift+클릭 &7또는 &e들고 빈칸 클릭&7 → 추가", "&7(복사본, 내 아이템은 그대로)",
+                "&eQ&7 → 빼기  &e아이템 들고 보상 클릭&7 → 교체", "&7저장하면 이전 설정은 백업 → &f/뽑기 되돌리기"));
         h.inv.setItem(CANCEL, button(Material.RED_CONCRETE, "&c&l취소", "&7바꾼 것 버리기"));
         ItemStack t = plugin.tickets.make(d, 1);
         ItemMeta tm = t.getItemMeta();
@@ -120,10 +127,8 @@ final class Gui implements Listener {
         }
         h.inv.setItem(TICKET, t);
         h.inv.setItem(RENAME, button(Material.NAME_TAG, "&e뽑기권 이름 바꾸기", "&7지금: " + d.display, "", "&e클릭&7 → 채팅에 새 이름 (&색 코드 가능)"));
-        h.inv.setItem(INFO, button(Material.BOOK, "&f사용법",
-                "&e인벤토리 아이템 Shift+클릭 &7또는", "&e들고 빈칸 클릭&7 → 보상으로 추가 (복사본, 내 아이템은 그대로)",
-                "&eQ&7 → 빼기  &e아이템 들고 보상 클릭&7 → 교체", "", "&7확률은 전부 똑같아요 (보상 개수로 나눔)",
-                "&7저장하면 이전 설정은 백업 → &f/뽑기 되돌리기"));
+        h.inv.setItem(PREV, button(h.page > 0 ? Material.ARROW : Material.GRAY_DYE, "&f◀ 이전 쪽", "&7" + (h.page + 1) + " / " + pages + " 쪽"));
+        h.inv.setItem(NEXT, button(h.page < pages - 1 ? Material.ARROW : Material.GRAY_DYE, "&f다음 쪽 ▶", "&7" + (h.page + 1) + " / " + pages + " 쪽", "&8칸이 다 차면 다음 쪽이 생겨요 (최대 " + MAX_REWARDS + "개)"));
         h.inv.setItem(NODUP, button(d.noDuplicate ? Material.LIME_DYE : Material.GRAY_DYE,
                 "&f치장 중복 금지: " + (d.noDuplicate ? "&a켜짐" : "&7꺼짐"), "&7켜면 옷장에 이미 있는 치장은 안 나와요", "", "&e클릭&7: 켜기/끄기"));
         String fb = d.fallbackPool == null ? "&7없음" : "&f" + d.fallbackPool + " 뽑기권 " + d.fallbackCount + "장";
@@ -146,14 +151,15 @@ final class Gui implements Listener {
             return;
         }
         ItemStack cursor = e.getCursor();
-        if (raw < 45) {
-            if (raw >= d.rewards.size()) {
+        if (raw < PER_PAGE) {
+            int idx = h.page * PER_PAGE + raw;
+            if (idx >= d.rewards.size()) {
                 if (cursor != null && !cursor.getType().isAir()) addReward(p, h, cursor);
                 return;
             }
-            Pool.Reward r = d.rewards.get(raw);
+            Pool.Reward r = d.rewards.get(idx);
             if (e.getClick() == ClickType.DROP || e.getClick() == ClickType.CONTROL_DROP) {
-                d.rewards.remove(raw);
+                d.rewards.remove(idx);
                 click(p);
             } else if (cursor != null && !cursor.getType().isAir()) {
                 r.item = cursor.clone(); // 들고 클릭: 아이템 바꿔치기
@@ -215,6 +221,8 @@ final class Gui implements Listener {
                 fillEditor(h);
             }
             case TEST -> plugin.test(p, d, 1000);
+            case PREV -> { if (h.page > 0) { h.page--; click(p); fillEditor(h); } }
+            case NEXT -> { h.page++; click(p); fillEditor(h); }
             default -> { }
         }
     }
@@ -225,13 +233,14 @@ final class Gui implements Listener {
             p.sendMessage(Util.color(PokiGacha.PREFIX + "&c뽑기권은 보상으로 넣을 수 없어요."));
             return;
         }
-        if (h.draft.rewards.size() >= 45) {
-            p.sendMessage(Util.color(PokiGacha.PREFIX + "&c보상은 45개까지예요."));
+        if (h.draft.rewards.size() >= MAX_REWARDS) {
+            p.sendMessage(Util.color(PokiGacha.PREFIX + "&c보상은 " + MAX_REWARDS + "개까지예요."));
             return;
         }
         Pool.Reward r = new Pool.Reward();
         r.item = it.clone();
         h.draft.rewards.add(r);
+        h.page = (h.draft.rewards.size() - 1) / PER_PAGE; // 넣은 쪽으로
         p.playSound(p.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.6f, 1.2f);
         fillEditor(h);
     }
@@ -263,19 +272,35 @@ final class Gui implements Listener {
     // 확률 보기 (모두)
     // =====================================================================
 
-    static final class ViewHolder extends Holder { }
+    static final class ViewHolder extends Holder {
+        final Pool pool;
+        final int page;
+        ViewHolder(Pool pool, int page) { this.pool = pool; this.page = page; }
+    }
 
-    void openView(Player p, Pool pool) {
-        ViewHolder h = new ViewHolder();
-        int rows = Math.max(1, Math.min(6, (pool.rewards.size() + 8) / 9));
-        h.inv = Bukkit.createInventory(h, rows * 9, Util.color("&8" + ChatStrip.strip(pool.display) + " · 확률"));
+    void openView(Player p, Pool pool) { openView(p, pool, 0); }
+
+    void openView(Player p, Pool pool, int page) {
+        int n = pool.rewards.size();
+        boolean paged = n > 54;
+        int pages = paged ? (n + PER_PAGE - 1) / PER_PAGE : 1;
+        page = Math.max(0, Math.min(page, pages - 1));
+        ViewHolder h = new ViewHolder(pool, page);
+        int rows = paged ? 6 : Math.max(1, Math.min(6, (n + 8) / 9));
+        h.inv = Bukkit.createInventory(h, rows * 9, Util.color("&8" + ChatStrip.strip(pool.display) + " · 확률" + (paged ? " (" + (page + 1) + "/" + pages + ")" : "")));
         Set<String> owned = pool.noDuplicate ? Util.ownedCosmetics(p) : Set.of();
         int total = pool.totalWeight();
-        for (int i = 0; i < pool.rewards.size() && i < rows * 9; i++) {
-            Pool.Reward r = pool.rewards.get(i);
+        int per = paged ? PER_PAGE : rows * 9, base = page * per;
+        for (int i = 0; i < per && base + i < n; i++) {
+            Pool.Reward r = pool.rewards.get(base + i);
             String k = Util.cosmeticKey(r.item);
             List<String> extra = k != null && owned.contains(k) ? List.of("&a✔ 이미 가짐 &7(안 나와요)") : List.of();
             h.inv.setItem(i, shown(r, total, extra));
+        }
+        if (paged) {
+            for (int i = 45; i < 54; i++) h.inv.setItem(i, button(Material.GRAY_STAINED_GLASS_PANE, " "));
+            if (page > 0) h.inv.setItem(45, button(Material.ARROW, "&f◀ 이전 쪽"));
+            if (page < pages - 1) h.inv.setItem(53, button(Material.ARROW, "&f다음 쪽 ▶"));
         }
         p.openInventory(h.inv);
     }
@@ -360,6 +385,10 @@ final class Gui implements Listener {
         if (!(e.getWhoClicked() instanceof Player p)) return;
         if (holder instanceof EditorHolder eh) { onEditorClick(e, eh, p); return; }
         e.setCancelled(true);
+        if (holder instanceof ViewHolder vh && e.getInventory().getSize() == 54) {
+            if (e.getRawSlot() == 45) { int pg = vh.page - 1; Bukkit.getScheduler().runTask(plugin, () -> openView(p, vh.pool, pg)); }
+            else if (e.getRawSlot() == 53) { int pg = vh.page + 1; Bukkit.getScheduler().runTask(plugin, () -> openView(p, vh.pool, pg)); }
+        }
     }
 
     @EventHandler
