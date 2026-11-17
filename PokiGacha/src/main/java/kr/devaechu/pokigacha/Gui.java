@@ -304,17 +304,15 @@ final class Gui implements Listener {
     }
 
     private static final int STEPS = 28;
+    /** 흰색(글꼴 그림 색 그대로) + 왼쪽으로 8칸 + 배경 그림 — PokiCosmetics 의 assets/minecraft/font/default.json */
+    private static final String BG_TITLE = "§f\ue9cf\ue9c0";
 
     void openRoll(Player p, Pool pool, Pool.Reward result, List<Pool.Reward> candidates) {
         List<Pool.Reward> reel = new ArrayList<>();
         for (int i = 0; i < STEPS + 9; i++) reel.add(candidates.get(rnd.nextInt(candidates.size())));
         reel.set(STEPS + 4, result); // 마지막에 가운데(13번 칸)에 결과가 오게
         RollHolder h = new RollHolder(p, pool, result, reel);
-        h.inv = Bukkit.createInventory(h, 27, Util.color("&8" + ChatStrip.strip(pool.display) + " 뽑는 중..."));
-        ItemStack glass = button(Material.BLACK_STAINED_GLASS_PANE, " ");
-        for (int i = 0; i < 27; i++) h.inv.setItem(i, glass);
-        h.inv.setItem(4, button(Material.HOPPER, "&e▼"));
-        h.inv.setItem(22, button(Material.HOPPER, "&e▲"));
+        h.inv = Bukkit.createInventory(h, 27, BG_TITLE); // 포키 모드 글꼴: 뽑기 기계 배경 그림
         rolling.put(p.getUniqueId(), h);
         p.openInventory(h.inv);
         frame(h);
@@ -347,9 +345,8 @@ final class Gui implements Listener {
         h.done = true;
         if (h.task != null) h.task.cancel();
         rolling.remove(h.player.getUniqueId());
-        // 결과 칸 강조
-        ItemStack mark = button(Material.LIME_STAINED_GLASS_PANE, " ");
-        for (int i : new int[]{0, 1, 2, 3, 5, 6, 7, 8, 18, 19, 20, 21, 23, 24, 25, 26}) h.inv.setItem(i, mark);
+        // 결과만 남기고 양옆은 비움 (배경 그림의 가운데 칸이 강조)
+        for (int i = 9; i < 18; i++) if (i != 13) h.inv.setItem(i, null);
         plugin.grant(h.player, h.pool, h.result);
     }
 
