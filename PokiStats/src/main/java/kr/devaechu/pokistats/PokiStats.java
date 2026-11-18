@@ -243,7 +243,28 @@ public final class PokiStats extends JavaPlugin implements Listener {
                 startRanks();
                 tell(s, "config.yml 다시 읽음 · " + interval() + "분마다");
             }
-            default -> tell(s, "/통계 [상태|보내기|리로드]");
+            case "후원", "donation" -> {
+                // ChzzkLink(입주민 후원) 보상 명령어에 넣어서 씀: pokistats 후원 {player} {amount}
+                // → 보상이 실제로 나간 후원만 통계에 기록 (후원자 이름은 안 남김)
+                if (args.length < 3) { tell(s, "/통계 후원 <마크닉> <금액>"); return true; }
+                long amount;
+                try { amount = Long.parseLong(args[2].replace(",", "")); } catch (NumberFormatException e) { tell(s, "&c금액은 숫자로"); return true; }
+                org.bukkit.entity.Player t = Bukkit.getPlayerExact(args[1]);
+                long now = System.currentTimeMillis();
+                String did = "chzzk-" + UUID.randomUUID();
+                queue.add(Json.event("donate", now)
+                        .put("id", did)
+                        .put("donationId", did)
+                        .put("amount", amount)
+                        .put("status", "PAID")
+                        .put("type", "입주민")
+                        .put("test", false)
+                        .put("streamerUuid", t == null ? null : t.getUniqueId().toString())
+                        .put("streamerName", t == null ? args[1] : t.getName())
+                        .toString());
+                tell(s, "후원 통계 기록: " + args[1] + " " + amount + "원");
+            }
+            default -> tell(s, "/통계 [상태|보내기|리로드|후원]");
         }
         return true;
     }
