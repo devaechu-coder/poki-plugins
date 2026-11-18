@@ -74,3 +74,7 @@
 - 1.1.1 — 운영진 숨김에 PokiName 순위 제외 목록도 같이 씀 (한글닉으로 적어도 됨), 순위 계산 때마다 접속자 숨김 상태 갱신
 - 1.1.0 — 게임 이벤트 전달(PokiEvents), rank_hide · wealth, 명예의 전당 GUI · 로비 홀로그램 · PAPI
 - 1.0.0 — 동접 · 접속 기록 · 후원 통계 (1단계)
+
+## 입주민 후원 통계 (ChzzkLink)
+
+ChzzkLink 보상 `commands` 에 `pokistats 후원 {player} {amount}` 를 넣으면, 보상이 나간 후원(메뉴 금액 + 스트리머 접속 중)이 통계 서버에 type=입주민 으로 기록된다. 후원자 이름은 안 남김.
