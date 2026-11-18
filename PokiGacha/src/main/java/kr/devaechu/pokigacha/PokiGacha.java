@@ -306,6 +306,12 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                 } else {
                     @SuppressWarnings("deprecation") OfflinePlayer op = Bukkit.getOfflinePlayer(a[1]);
                     if (!op.hasPlayedBefore()) { s.sendMessage(c(PREFIX + "&c" + a[1] + " — 서버에 들어온 적 없는 이름이에요.")); return true; }
+                    if (!getConfig().getBoolean("offline-give", false)) {
+                        // 접속 안 한 사람에게는 안 줌 (config offline-give: true 면 보관했다가 다음 접속 때)
+                        s.sendMessage(c(PREFIX + "&e" + a[1] + " 접속 안 함 → 지급 안 했어요."));
+                        getLogger().info("뽑기권 지급 안 함 (접속 안 함): " + a[1] + " " + pool.name + " x" + n);
+                        return true;
+                    }
                     addPending(op.getUniqueId(), pool.name, n);
                     s.sendMessage(c(PREFIX + a[1] + " 접속 안 함 → 다음 접속 때 " + pool.name + " 뽑기권 " + n + "장 지급"));
                 }
