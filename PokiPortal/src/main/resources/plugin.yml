@@ -1,0 +1,16 @@
+name: PokiPortal
+version: ${project.version}
+main: kr.devaechu.pokiportal.PokiPortal
+api-version: '1.21'
+description: 네더 이동권 (우클릭 → 네더 랜덤 위치) + 네더 포털 막기
+commands:
+  네더이동권:
+    description: 네더 이동권 지급 (운영진·콘솔) / 리로드
+    aliases: [netherticket]
+permissions:
+  poki.portal.admin:
+    description: 네더 이동권 지급·리로드
+    default: op
+  poki.portal.bypass:
+    description: 네더 포털 사용·생성 허용 (운영진)
+    default: op
