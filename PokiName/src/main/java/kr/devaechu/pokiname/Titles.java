@@ -51,7 +51,7 @@ final class Titles implements CommandExecutor, TabCompleter {
     static final String TAG = "pokiname_title";
     static final String ADMIN = "pokiname.title.admin";
     /** 기본 titles.yml 의 version — 기본 칭호 목록을 바꿀 때 올림 (서버의 옛 titles.yml 을 새 것으로 교체) */
-    static final int DEFS_VERSION = 2;
+    static final int DEFS_VERSION = 3;
 
     record Def(String id, String name, String glyph, String chat, String tier, boolean announceFirst) { }
 
@@ -83,12 +83,33 @@ final class Titles implements CommandExecutor, TabCompleter {
         defsFile = new File(plugin.getDataFolder(), "titles.yml");
         if (!defsFile.exists()) {
             plugin.saveResource("titles.yml", false);
-        } else if (YamlConfiguration.loadConfiguration(defsFile).getInt("version", 1) < DEFS_VERSION) {
-            // 칭호 목록이 새로 바뀜 → 옛 파일은 백업하고 새 목록으로
-            File old = new File(plugin.getDataFolder(), "titles.yml.old");
-            if (old.exists()) old.delete();
-            if (defsFile.renameTo(old)) plugin.getLogger().info("칭호 목록이 바뀌어 titles.yml 을 새로 만듦 (옛 파일: titles.yml.old)");
-            plugin.saveResource("titles.yml", true);
+        } else {
+            YamlConfiguration cur = YamlConfiguration.loadConfiguration(defsFile);
+            int v = cur.getInt("version", 1);
+            if (v < 2) {
+                // 아주 옛 목록(영어 id) → 백업하고 새 목록으로
+                File old = new File(plugin.getDataFolder(), "titles.yml.old");
+                if (old.exists()) old.delete();
+                if (defsFile.renameTo(old)) plugin.getLogger().info("칭호 목록이 바뀌어 titles.yml 을 새로 만듦 (옛 파일: titles.yml.old)");
+                plugin.saveResource("titles.yml", true);
+            } else if (v < DEFS_VERSION) {
+                // 새 기본 칭호만 덧붙임 (서버에서 고친 칭호는 그대로)
+                try (java.io.Reader rd = new java.io.InputStreamReader(plugin.getResource("titles.yml"), java.nio.charset.StandardCharsets.UTF_8)) {
+                    YamlConfiguration def = YamlConfiguration.loadConfiguration(rd);
+                    ConfigurationSection ds = def.getConfigurationSection("titles");
+                    int added = 0;
+                    if (ds != null) for (String id : ds.getKeys(false)) {
+                        if (cur.contains("titles." + id)) continue;
+                        cur.createSection("titles." + id, ds.getConfigurationSection(id).getValues(false));
+                        added++;
+                    }
+                    cur.set("version", DEFS_VERSION);
+                    cur.save(defsFile);
+                    plugin.getLogger().info("새 기본 칭호 " + added + "개를 titles.yml 에 추가");
+                } catch (Exception e) {
+                    plugin.getLogger().warning("titles.yml 새 칭호 추가 실패: " + e);
+                }
+            }
         }
         dataFile = new File(plugin.getDataFolder(), "player-titles.yml");
         loadDefs();
