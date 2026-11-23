@@ -185,6 +185,33 @@
       ]
     },
     {
+      "type": "bitmap",
+      "file": "poki:font/titles/t21.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue115"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/t22.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue116"
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "poki:font/titles/t23.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue117"
+      ]
+    },
+    {
       "type": "space",
       "advances": {
         "\ue800": -1,
