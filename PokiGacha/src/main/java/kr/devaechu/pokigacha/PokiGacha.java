@@ -342,6 +342,35 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                 Pool pool = poolArg(s, a[1]);
                 if (pool != null) gui.openEditor(p, pool);
             }
+            case "추가", "빼기" -> {
+                if (!admin) { s.sendMessage(c(PREFIX + "&c운영진만")); return true; }
+                if (a.length < 4 || !Bulk.SLOTS.containsKey(a[2])) {
+                    s.sendMessage(c(PREFIX + "/뽑기 " + sub + " <종류> <" + String.join("|", Bulk.SLOTS.keySet()) + "> <번호>"));
+                    s.sendMessage(c("&7  번호: &f27-86 &7(범위) · &f1,3,5 &7(여러 개) · &f40-44,2 &7· &f전부 &7(관리자 옷 3·5번은 빠짐)"));
+                    s.sendMessage(c("&7  예) &f/뽑기 추가 치장 옷 27-86 &7· &f/뽑기 추가 치장 모자 40-44"));
+                    return true;
+                }
+                Pool pool = poolArg(s, a[1]);
+                if (pool == null) return true;
+                if (pool.editor != null) { s.sendMessage(c(PREFIX + "&c" + pool.editor + " 님이 편집 중이에요. 편집 창을 닫은 뒤에 다시")); return true; }
+                try {
+                    if (sub.equals("추가")) {
+                        List<String> report = new ArrayList<>();
+                        int[] r = Bulk.add(pool, a[2], a[3], report);
+                        for (String line : report) s.sendMessage(c(PREFIX + line));
+                        if (r[0] > 0) store.save(true);
+                        s.sendMessage(c(PREFIX + "&a" + pool.name + " 에 " + a[2] + " " + r[0] + "개 넣었어요."
+                                + (r[1] > 0 ? " &7(이미 있음 " + r[1] + ")" : "") + (r[2] > 0 ? " &7(건너뜀 " + r[2] + ")" : "")
+                                + " &7지금 보상 " + pool.rewards.size() + "개 · 확인: /뽑기 확률 " + pool.name));
+                    } else {
+                        int n = Bulk.remove(pool, a[2], a[3]);
+                        if (n > 0) store.save(true);
+                        s.sendMessage(c(PREFIX + "&e" + pool.name + " 에서 " + a[2] + " " + n + "개 뺐어요. &7잘못 뺐으면 /뽑기 되돌리기"));
+                    }
+                } catch (NumberFormatException e) {
+                    s.sendMessage(c(PREFIX + "&c번호를 못 읽었어요: " + a[3] + " &7(예: 27-86, 1,3,5, 전부)"));
+                }
+            }
             case "만들기" -> {
                 if (!admin) return true;
                 if (a.length < 2) { s.sendMessage(c(PREFIX + "/뽑기 만들기 <이름>")); return true; }
@@ -384,7 +413,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
                     s.sendMessage(c(" &f" + pool.name + " &7보상 " + pool.rewards.size() + "개" + (pool.noDuplicate ? " · 치장 중복 없음" : "") + (pool.editor != null ? " &e(점검 중)" : "")));
                 }
                 s.sendMessage(c("&7뽑기권 들고 우클릭 · &f/뽑기 확률 <종류> &7· &f/뽑기 받기 &7(보관 중인 뽑기권)"));
-                if (admin) s.sendMessage(c("&8운영진: /뽑기 편집|만들기|삭제|되돌리기|테스트|리로드 · /뽑기권 지급 <플레이어> <종류> [개수]"));
+                if (admin) s.sendMessage(c("&8운영진: /뽑기 편집|추가|빼기|만들기|삭제|되돌리기|테스트|리로드 · /뽑기권 지급 <플레이어> <종류> [개수]"));
             }
         }
         return true;
@@ -404,8 +433,10 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         } else {
             if (a.length == 1) {
                 out.addAll(List.of("확률", "받기"));
-                if (admin) out.addAll(List.of("편집", "만들기", "삭제", "되돌리기", "테스트", "리로드"));
-            } else if (a.length == 2 && List.of("확률", "편집", "삭제", "테스트").contains(a[0])) out.addAll(pools);
+                if (admin) out.addAll(List.of("편집", "추가", "빼기", "만들기", "삭제", "되돌리기", "테스트", "리로드"));
+            } else if (a.length == 2 && List.of("확률", "편집", "삭제", "테스트", "추가", "빼기").contains(a[0])) out.addAll(pools);
+            else if (admin && a.length == 3 && List.of("추가", "빼기").contains(a[0])) out.addAll(Bulk.SLOTS.keySet());
+            else if (admin && a.length == 4 && List.of("추가", "빼기").contains(a[0])) out.addAll(List.of("전부", "1-10"));
         }
         String last = a.length == 0 ? "" : a[a.length - 1];
         out.removeIf(x -> !x.startsWith(last));
