@@ -212,6 +212,15 @@
       ]
     },
     {
+      "type": "bitmap",
+      "file": "poki:font/titles/t24.png",
+      "height": 17,
+      "ascent": 15,
+      "chars": [
+        "\ue118"
+      ]
+    },
+    {
       "type": "space",
       "advances": {
         "\ue800": -1,

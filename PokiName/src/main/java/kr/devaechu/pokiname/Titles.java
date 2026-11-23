@@ -51,7 +51,7 @@ final class Titles implements CommandExecutor, TabCompleter {
     static final String TAG = "pokiname_title";
     static final String ADMIN = "pokiname.title.admin";
     /** 기본 titles.yml 의 version — 기본 칭호 목록을 바꿀 때 올림 (서버의 옛 titles.yml 을 새 것으로 교체) */
-    static final int DEFS_VERSION = 3;
+    static final int DEFS_VERSION = 4;
 
     record Def(String id, String name, String glyph, String chat, String tier, boolean announceFirst) { }
 
