@@ -3,7 +3,7 @@
 # 바꾼 뒤 /한글닉 리로드
 
 # config 형식 버전 (플러그인이 관리 — 건드리지 않기)
-config-version: 5
+config-version: 6
 
 # 머리 위 이름표
 nametag:
@@ -43,8 +43,21 @@ title:
   scale: 1.0
   # 한글닉이 없는 사람은 원래 이름표 위에 띄움 — 그 이름표 높이
   vanilla-nametag-offset: 0.6
-  # Tab·채팅에 붙는 칭호 글씨 ({title} = titles.yml 의 chat)
+  # Tab·채팅에 붙는 칭호 글씨 ({title} = titles.yml 의 chat). 이미지 칭호 > 글씨 칭호 순으로 하나만
   chat-format: '{title}&r '
+  # 글씨 칭호를 머리 위 한글닉 바로 위 줄에 보일지 (이름표 안에 넣어서 엔티티 안 늘어남)
+  text-overhead: true
+  # 머리 위 글씨 칭호 형식 ({title} = 색 입힌 [칭호 이름])
+  text-format: '{title}'
+  # 글씨 칭호 줄이 있으면 이미지 배지를 이만큼 더 올림 (겹치면 키우기)
+  text-title-gap: 0.25
+  # 머리 위 한글닉 앞에 마을 이름 (PokiTown 필요). 운영진이 머리 위 확인한 다음 true 로 켜고 /한글닉 리로드
+  town:
+    enabled: false
+    # {color} 마을 색, {town} 마을 이름
+    format: '{color}[{town}]&r '
+    # Towny 마을 이름이 이보다 길면 … 로 자름 (운영진이 /마을앱 표시 로 정한 이름은 그대로). 0 = 안 자름
+    max-length: 8
   # 서버에서 칭호를 처음 받으면 전체 공지 (칭호 하나씩 지급할 때만, '전체' 지급은 안 침)
   # 칭호별로 끄려면 titles.yml 에서 그 칭호에 announce-first: false
   # 오픈 직전에 /칭호 최초초기화 전체 로 테스트 기록 지우기

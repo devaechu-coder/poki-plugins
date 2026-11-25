@@ -12,6 +12,7 @@
 | [PokiUI](PokiUI/) | 다른 플러그인 상자 제목을 포키 UI 그림 제목으로 바꿈 (SimpleShopJS 상점 7개) |
 | [PokiLive](PokiLive/) | 콘서트장 공연 연출 — 불꽃쇼 · 스크린 문구 · 조명 파티클 · 스포트라이트 · 리모컨 GUI (`/공연`) |
 | [PokiMaintenance](PokiMaintenance/) | 점검 모드 — 점검 중엔 운영진만 접속 (`/점검 시작 22:00`, `/점검 끝`), 런처에 점검 표시 |
+| [PokiTown](PokiTown/) | 마을 — Towny 마을 정보를 포키폰 마을 앱·머리 위 마을 표시에 넘겨줌 (`/마을앱`) |
 
 각 폴더에서 `mvn package` 로 빌드.
 

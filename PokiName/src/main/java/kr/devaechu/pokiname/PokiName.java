@@ -69,6 +69,10 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private BiomeName biomeName;
     /** 칭호 */
     private Titles titles;
+    /** 머리 위 마을 표시 (PokiTown) */
+    private TownLink town;
+    /** 이름표 안에 글씨 칭호 줄이 있는 사람 (배지를 한 줄 더 올림) */
+    private final java.util.Set<UUID> textLine = new java.util.HashSet<>();
 
     @Override
     public void onEnable() {
@@ -86,6 +90,9 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         }
         titles = new Titles(this);
         titles.load();
+        town = new TownLink(this);
+        if (town.connect()) getLogger().info("PokiTown 연결: 머리 위 마을 표시 " + (townEnabled() ? "켜짐" : "꺼짐 (config title.town.enabled)"));
+        else getLogger().info("PokiTown 없음 → 머리 위 마을 표시 꺼짐 (한글닉·칭호는 그대로)");
 
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getPluginManager().registerEvents(new NickArgs(this), this);
@@ -133,7 +140,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         if (cobbleRank != null) cobbleRank.stop();
         if (biomeName != null) biomeName.stop();
         for (UUID id : new ArrayList<>(tags.keySet())) removeTag(id);
-        if (titles != null) titles.removeAll();
+        if (titles != null) { titles.removeAll(); titles.close(); }
     }
 
     // ---------- 이벤트 ----------
@@ -156,6 +163,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         UUID qid = e.getPlayer().getUniqueId();
         removeTag(qid);
         titles.remove(qid);
+        textLine.remove(qid);
+        tagText.remove(qid);
         lastWorld.remove(qid);
         stableTicks.remove(qid);
         // 나간 직후엔 아직 접속자로 잡혀서 1틱 뒤에 갱신
@@ -172,8 +181,18 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         Team team = sb.getTeam(teamName);
 
         String title = titles.chatPrefix(p.getUniqueId());
+        // 머리 위: [글씨 칭호] 줄 + [마을] 한글닉 (display 모드만, 같은 엔티티 안에)
+        String textTitle = displayMode() ? titles.overheadTextLine(p.getUniqueId()) : "";
+        String townTag = townTag(p.getUniqueId());
+        if (textTitle.isEmpty()) textLine.remove(p.getUniqueId()); else textLine.add(p.getUniqueId());
+
+        if (v == null && displayMode() && (!textTitle.isEmpty() || !townTag.isEmpty())) {
+            // 한글닉은 없지만 머리 위에 붙일 게 있음 → 마크닉으로 한글닉 이름표와 같은 규칙
+            v = new String[]{p.getName(), p.getName()};
+        }
 
         if (v == null) {
+            textLine.remove(p.getUniqueId());
             removeTag(p.getUniqueId());
             tagText.remove(p.getUniqueId());
             if (team != null) team.unregister();
@@ -197,15 +216,18 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             team.setPrefix("");
             team.setSuffix("");
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
-            tagText.put(p.getUniqueId(), color(c.getString("nametag.display-text", "&f{nick}").replace("{nick}", nick).replace("{name}", p.getName())));
+            String line = color(townTag) + color(c.getString("nametag.display-text", "&f{nick}").replace("{nick}", nick).replace("{name}", p.getName()));
+            String full = textTitle.isEmpty() ? line : textTitle + "\n" + line;
+            String before = tagText.put(p.getUniqueId(), full);
             TextDisplay d = tags.get(p.getUniqueId());
-            if (d != null && d.isValid()) d.setText(tagText.get(p.getUniqueId()));
+            // 글씨가 같으면 안 건드림
+            if (d != null && d.isValid() && !full.equals(before)) d.setText(full);
         } else {
             // 팀 접두사 + 원래 이름
             removeTag(p.getUniqueId());
             tagText.remove(p.getUniqueId());
             team.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.ALWAYS);
-            team.setPrefix(color(c.getString("nametag.prefix", "&f{nick} &7").replace("{nick}", nick)));
+            team.setPrefix(color(townTag) + color(c.getString("nametag.prefix", "&f{nick} &7").replace("{nick}", nick)));
             team.setSuffix(color(c.getString("nametag.suffix", "").replace("{nick}", nick)));
             try {
                 team.setColor(ChatColor.valueOf(c.getString("nametag.name-color", "GRAY").toUpperCase(Locale.ROOT)));
@@ -220,13 +242,45 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         p.setDisplayName(color(c.getString("display-name", "{title}{nick}").replace("{title}", title).replace("{nick}", nick).replace("{name}", p.getName())));
     }
 
-    /** 칭호가 바뀌었을 때 등 — 이름표·Tab·채팅 이름 다시 적용 */
+    /** 칭호·마을이 바뀌었을 때 등 — 이름표·Tab·채팅 이름 다시 적용 */
     void refresh(Player p) {
         apply(p);
     }
 
+    boolean townEnabled() {
+        return getConfig().getBoolean("title.town.enabled", false);
+    }
+
+    /** 이름 앞에 붙일 마을 표시 (색 코드 그대로, 없으면 ""). 알바는 안 붙음 (주민만) */
+    String townTag(UUID id) {
+        if (!townEnabled() || town == null || !town.connected()) return "";
+        Map<String, String> t = town.townOf(id);
+        if (t == null) return "";
+        return getConfig().getString("title.town.format", "{color}[{town}]&r ")
+                .replace("{color}", t.getOrDefault("color", "&f"))
+                .replace("{town}", townName(t));
+    }
+
+    /** %pokiname_town% — 마을 이름(색 포함), 없으면 "" */
+    String townPlain(UUID id) {
+        if (town == null || !town.connected()) return "";
+        Map<String, String> t = town.townOf(id);
+        return t == null ? "" : t.getOrDefault("color", "") + townName(t);
+    }
+
+    /** 운영진이 정한 이름은 그대로, Towny 이름은 최대 글자 수 넘으면 … */
+    private String townName(Map<String, String> t) {
+        String n = t.getOrDefault("display", "");
+        if ("1".equals(t.get("custom"))) return n;
+        int max = getConfig().getInt("title.town.max-length", 8);
+        String plain = stripColor(n);
+        if (max > 0 && plain.codePointCount(0, plain.length()) > max)
+            return plain.substring(0, plain.offsetByCodePoints(0, max)) + "…";
+        return n;
+    }
+
     /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
-    private static final int CONFIG_VERSION = 5;
+    private static final int CONFIG_VERSION = 6;
     /** 귓속말 명령어 (마크 기본 + Essentials 별칭) */
     private static final String[] WHISPER = {"msg", "tell", "w", "whisper", "m", "t", "pm"};
 
@@ -321,6 +375,25 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             for (String w : WHISPER) if (!c.contains("nick-commands." + w, true)) { c.set("nick-commands." + w, List.of(1)); added.add(w); }
             if (!added.isEmpty()) getLogger().info("config.yml: 귓속말 명령어 한글닉 추가 → " + added);
         }
+        // v6: 글씨 칭호 · 머리 위 마을 표시
+        if (!c.contains("title.text-overhead", true)) {
+            c.set("title.text-overhead", true);
+            c.setComments("title.text-overhead", List.of("글씨 칭호를 머리 위 한글닉 바로 위 줄에 보일지 (이름표 안에 넣어서 엔티티 안 늘어남)"));
+            c.set("title.text-format", "{title}");
+            c.setComments("title.text-format", List.of("머리 위 글씨 칭호 형식 ({title} = 색 입힌 [칭호 이름])"));
+            c.set("title.text-title-gap", 0.25);
+            c.setComments("title.text-title-gap", List.of("글씨 칭호 줄이 있으면 이미지 배지를 이만큼 더 올림 (겹치면 키우기)"));
+            getLogger().info("config.yml: 글씨 칭호 설정(title.text-*) 추가");
+        }
+        if (!c.contains("title.town", true)) {
+            c.set("title.town.enabled", false);
+            c.setComments("title.town.enabled", List.of("머리 위 한글닉 앞에 마을 이름 (PokiTown 필요). 운영진이 머리 위 확인한 다음 true 로 켜고 /한글닉 리로드"));
+            c.set("title.town.format", "{color}[{town}]&r ");
+            c.setComments("title.town.format", List.of("{color} 마을 색, {town} 마을 이름"));
+            c.set("title.town.max-length", 8);
+            c.setComments("title.town.max-length", List.of("Towny 마을 이름이 이보다 길면 … 로 자름 (운영진이 /마을앱 표시 로 정한 이름은 그대로). 0 = 안 자름"));
+            getLogger().info("config.yml: 머리 위 마을 표시 설정(title.town) 추가 — 꺼진 상태");
+        }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();
     }
@@ -336,6 +409,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         double offset = 0.6;
         try { offset = Double.parseDouble(getConfig().getString("nametag.height-offset", "0.6")); } catch (NumberFormatException ignored) { }
         double vanillaOffset = getConfig().getDouble("title.vanilla-nametag-offset", 0.6);
+        double textGap = getConfig().getDouble("title.text-title-gap", 0.25);
         int waitTicks = 20;
         boolean seeThrough = "true".equalsIgnoreCase(getConfig().getString("nametag.see-through", "false"));
         try { waitTicks = Integer.parseInt(getConfig().getString("nametag.spawn-delay-ticks", "20")); } catch (NumberFormatException ignored) { }
@@ -359,7 +433,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             boolean show = !hidden && stable >= waitTicks;
 
             // 칭호 배지: 한글닉 글씨가 있으면 그 위, 없으면 원래 이름표 위
-            Location base = p.getLocation().add(0, p.getHeight() + (text != null ? offset : vanillaOffset), 0);
+            Location base = p.getLocation().add(0, p.getHeight() + (text != null ? offset + (textLine.contains(id) ? textGap : 0) : vanillaOffset), 0);
             titles.tick(p, base, show, seeThrough);
 
             if (text == null) continue;
@@ -546,6 +620,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 loadNicks();
                 titles.load();
                 titles.removeAll();
+                if (town != null && !town.connected()) town.connect();
                 if (moneyRank != null) moneyRank.start();
                 if (cobbleRank != null) cobbleRank.start();
                 if (biomeName != null) biomeName.start();

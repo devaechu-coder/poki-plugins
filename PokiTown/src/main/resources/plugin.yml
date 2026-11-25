@@ -1,0 +1,18 @@
+name: PokiTown
+version: ${project.version}
+main: kr.devaechu.pokitown.PokiTown
+api-version: '1.21'
+author: DevAechu
+depend: [Towny]
+softdepend: [PlaceholderAPI, PokiName]
+description: 포키 마을 — Towny 마을 정보를 포키폰 마을 앱·머리 위 마을 표시에 넘겨줌
+commands:
+  pokitown:
+    description: 마을 표시 이름·색, 전체 마을 목록 공개 스위치 (운영진)
+    usage: /마을앱 <표시|색|초기화|목록공개|정보>
+    aliases: [마을앱]
+    permission: pokitown.admin
+permissions:
+  pokitown.admin:
+    description: /마을앱 명령어, 마을 이름 욕설 알림 받기
+    default: op
