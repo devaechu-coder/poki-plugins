@@ -286,6 +286,34 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         boolean admin = s.hasPermission("poki.gacha.admin");
         if (cmd.getName().equals("뽑기권")) {
             if (!admin) { s.sendMessage(c(PREFIX + "&c운영진만 쓸 수 있어요.")); return true; }
+            // /뽑기권 우편 <플레이어|@a> <종류> [개수] — 인벤 말고 바로 포키 우편함으로 (접속 안 해도 됨)
+            if (a.length >= 3 && a[0].equals("우편")) {
+                Pool pool = poolArg(s, a[2]);
+                if (pool == null) return true;
+                int n = 1;
+                if (a.length >= 4) try { n = Math.max(1, Math.min(10000, Integer.parseInt(a[3]))); } catch (NumberFormatException ignored) { }
+                List<UUID> to = new ArrayList<>();
+                if (a[1].startsWith("@")) {
+                    List<Player> targets = targets(s, a[1]);
+                    if (targets == null) { s.sendMessage(c(PREFIX + "&c선택자를 못 읽었어요: " + a[1] + " &7(@a 를 써 주세요)")); return true; }
+                    for (Player t : targets) to.add(t.getUniqueId());
+                } else {
+                    Player on = Bukkit.getPlayerExact(a[1]);
+                    if (on != null) to.add(on.getUniqueId());
+                    else {
+                        @SuppressWarnings("deprecation") OfflinePlayer op = Bukkit.getOfflinePlayer(a[1]);
+                        if (!op.hasPlayedBefore()) { s.sendMessage(c(PREFIX + "&c" + a[1] + " — 서버에 들어온 적 없는 이름이에요.")); return true; }
+                        to.add(op.getUniqueId());
+                    }
+                }
+                int sent = 0;
+                for (UUID u : to) if (Mailbox.mail(u, tickets.make(pool, 1), n, "뽑기권")) sent++;
+                if (sent == 0 && !to.isEmpty()) { s.sendMessage(c(PREFIX + "&c포키 우편함(PokiMail)이 없어서 못 보냈어요 &7(/뽑기권 지급 을 써 주세요)")); return true; }
+                getLogger().info("뽑기권 우편: " + a[1] + " (" + sent + "명) " + pool.name + " x" + n);
+                if (!(s instanceof Player) && sent > 1) return true;
+                s.sendMessage(c(PREFIX + sent + "명 우편함에 " + pool.name + " 뽑기권 " + n + "장씩 보냈어요"));
+                return true;
+            }
             // /뽑기권 지급 <플레이어> <종류> [개수]
             if (a.length >= 3 && a[0].equals("지급")) {
                 Pool pool = poolArg(s, a[2]);
@@ -433,7 +461,7 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         List<String> pools = new ArrayList<>(store.pools.keySet());
         if (cmd.getName().equals("뽑기권")) {
             if (!admin) return out;
-            if (a.length == 1) out.add("지급");
+            if (a.length == 1) { out.add("지급"); out.add("우편"); }
             else if (a.length == 2) { out.add("@a"); for (Player p : Bukkit.getOnlinePlayers()) out.add(p.getName()); }
             else if (a.length == 3) out.addAll(pools);
             else if (a.length == 4) out.add("1");
