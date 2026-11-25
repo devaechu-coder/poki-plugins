@@ -21,6 +21,11 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -143,6 +148,8 @@ public final class PokiAfk extends JavaPlugin implements Listener, TabCompleter 
 
     private void kick(Player p) {
         String name = p.getName();
+        long idleMin = (System.currentTimeMillis() - last.getOrDefault(p.getUniqueId(), System.currentTimeMillis())) / 60_000L;
+        stats(p.getUniqueId(), name, idleMin);
         last.remove(p.getUniqueId());
         warned.remove(p.getUniqueId());
         p.kickPlayer(fill(getConfig().getString("messages.kick", "&e잠수로 접속이 끊겼어요"), p, 0));
@@ -152,6 +159,30 @@ public final class PokiAfk extends JavaPlugin implements Listener, TabCompleter 
             String m = fill(staff.replace("{name}", name), null, 0);
             for (Player o : Bukkit.getOnlinePlayers()) if (o.hasPermission("pokiafk.admin")) o.sendMessage(m);
         }
+    }
+
+    /**
+     * 통계: PokiStats 가 있으면 그 inbox 폴더에 이벤트 한 줄 (PokiStats 가 1초마다 읽어서 통계 서버로 보냄).
+     * {"t":"afk_kick", uuid, name, minutes}. 파일 쓰기는 비동기.
+     */
+    private void stats(UUID id, String name, long minutes) {
+        if (!getConfig().getBoolean("stats", true)) return;
+        if (Bukkit.getPluginManager().getPlugin("PokiStats") == null) return;
+        File dir = new File(getDataFolder().getParentFile(), "PokiStats/inbox");
+        long at = System.currentTimeMillis();
+        String line = "{\"id\":\"" + UUID.randomUUID() + "\",\"t\":\"afk_kick\",\"at\":" + at
+                + ",\"uuid\":\"" + id + "\",\"name\":\"" + name.replaceAll("[^A-Za-z0-9_.]", "") + "\",\"minutes\":" + minutes + "}\n";
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                dir.mkdirs();
+                String base = "afk-" + at + "-" + id.toString().substring(0, 8);
+                Path tmp = new File(dir, base + ".tmp").toPath();
+                Files.writeString(tmp, line, StandardCharsets.UTF_8);
+                Files.move(tmp, new File(dir, base + ".jsonl").toPath(), StandardCopyOption.ATOMIC_MOVE);
+            } catch (Exception e) {
+                getLogger().warning("통계 기록 실패: " + e);
+            }
+        });
     }
 
     private String fill(String s, Player p, long seconds) {
