@@ -1,0 +1,19 @@
+name: PokiAfk
+version: ${project.version}
+main: kr.devaechu.pokiafk.PokiAfk
+api-version: '1.21'
+author: DevAechu
+description: 오래 잠수하면 킥 (기본 1시간, 1분 전 경고)
+commands:
+  pokiafk:
+    description: 잠수 킥 상태·설정 (운영진)
+    usage: /잠수 <상태|시간|꽉참만|리로드>
+    aliases: [잠수]
+    permission: pokiafk.admin
+permissions:
+  pokiafk.admin:
+    description: /잠수 명령어
+    default: op
+  pokiafk.exempt:
+    description: 잠수해도 킥 안 당함 (운영진)
+    default: op
