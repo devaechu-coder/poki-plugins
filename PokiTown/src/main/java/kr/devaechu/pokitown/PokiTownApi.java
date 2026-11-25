@@ -37,7 +37,7 @@ public final class PokiTownApi {
     private PokiTownApi() {}
 
     private static final Pattern PLAYER = Pattern.compile("^[A-Za-z0-9_.]{1,20}$");
-    private static final Pattern TOWN = Pattern.compile("^[\\p{L}\\p{N}_\\-]{1,40}$");
+    private static final Pattern TOWN = Pattern.compile("^[^\\s/\\\\]{1,40}$"); // 띄어쓰기만 막음 (Towny 이름엔 [ ] 같은 기호도 됨)
 
     private static PokiTown p() {
         PokiTown p = PokiTown.inst;
