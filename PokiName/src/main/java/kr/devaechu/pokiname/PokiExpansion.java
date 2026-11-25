@@ -25,11 +25,16 @@ final class PokiExpansion extends PlaceholderExpansion {
 
     private final PokiName plugin;
 
-    PokiExpansion(PokiName plugin) {
+    PokiExpansion(PokiName plugin) { this(plugin, "pokiname"); }
+
+    private final String id;
+
+    PokiExpansion(PokiName plugin, String id) {
         this.plugin = plugin;
+        this.id = id;
     }
 
-    @Override public String getIdentifier() { return "pokiname"; }
+    @Override public String getIdentifier() { return id; }
     @Override public String getAuthor() { return "DevAechu"; }
     @Override public String getVersion() { return plugin.getDescription().getVersion(); }
     @Override public boolean persist() { return true; }
@@ -37,6 +42,14 @@ final class PokiExpansion extends PlaceholderExpansion {
     @Override
     public String onRequest(OfflinePlayer player, String params) {
         String p = params == null ? "" : params;
+
+        // 예전 NickName 플러그인 호환: %nickname_name% (색 적용 한글닉, 없으면 마크닉), %nickname_raw% (색 코드 그대로)
+        if (id.equals("nickname")) {
+            if (player == null) return "";
+            String fb = player.getName() == null ? "" : player.getName();
+            if (p.equals("raw")) return plugin.nickOf(player.getUniqueId(), fb);
+            return PokiName.color(plugin.nickOf(player.getUniqueId(), fb));
+        }
 
         if (p.equals("nick")) {
             if (player == null) return "";

@@ -23,6 +23,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
@@ -76,6 +77,13 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         upgradeConfig();
         dataFile = new File(getDataFolder(), "nicknames.yml");
         loadNicks();
+        if (!getConfig().getBoolean("import.nickname-plugin-done", false)) {
+            int n = importNickNamePlugin(false);
+            if (n >= 0) {
+                getConfig().set("import.nickname-plugin-done", true);
+                saveConfig();
+            }
+        }
         titles = new Titles(this);
         titles.load();
 
@@ -105,6 +113,15 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             new PokiExpansion(this).register();
             getLogger().info("PlaceholderAPI 연결: %pokiname_nick%, %pokiname_money_1% 등 사용 가능");
+            // 예전 NickName 플러그인을 뺐을 때 %nickname_name% 를 쓰던 스코어보드·Skript 가 안 깨지게 (서버 다 켜진 뒤 확인)
+            Bukkit.getScheduler().runTask(this, () -> {
+                Plugin old = Bukkit.getPluginManager().getPlugin("NickName");
+                if (old != null && old.isEnabled()) {
+                    getLogger().warning("NickName 플러그인이 아직 켜져 있어요 — 머리 위 이름표가 겹칠 수 있으니 빼 주세요 (한글닉은 이미 가져옴)");
+                } else if (new PokiExpansion(this, "nickname").register()) {
+                    getLogger().info("PlaceholderAPI: %nickname_name% 도 한글닉으로 대답 (예전 NickName 호환)");
+                }
+            });
         }
         getLogger().info("한글닉 " + nicks.size() + "개 불러옴");
     }
@@ -440,6 +457,15 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     @Override
     public boolean onCommand(CommandSender s, Command cmd, String label, String[] a) {
+        if (cmd.getName().equals("pnickcompat")) {
+            // 예전 NickName 플러그인 명령어 그대로: /닉네임설정 <플레이어> <닉네임|삭제>
+            if (a.length < 2) { s.sendMessage(color("&e/" + label + " <플레이어> <닉네임|삭제>")); return true; }
+            boolean del = a.length == 2 && (a[1].equals("삭제") || a[1].equalsIgnoreCase("reset") || a[1].equalsIgnoreCase("none"));
+            String[] b = new String[a.length + 1];
+            b[0] = "설정";
+            System.arraycopy(a, 0, b, 1, a.length);
+            return onCommand(s, getCommand("pnick"), "한글닉", del ? new String[]{"해제", a[0]} : b);
+        }
         if (!s.hasPermission("pokiname.admin")) {
             s.sendMessage(color("&c권한이 없어요."));
             return true;
@@ -506,6 +532,14 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
                 if (err != null) { s.sendMessage(color("&c" + err)); return true; }
                 for (String line : r.debug()) s.sendMessage(color(line));
             }
+            case "가져오기", "import" -> {
+                boolean ow = a.length > 1 && a[1].equals("덮어쓰기");
+                int n = importNickNamePlugin(ow);
+                if (n < 0) { s.sendMessage(color("&cplugins/NickName/config.yml 이 없어요.")); return true; }
+                for (Player p : Bukkit.getOnlinePlayers()) apply(p);
+                refreshHeaders();
+                s.sendMessage(color("&aNickName 플러그인에서 " + n + "명 가져왔어요." + (ow ? "" : " &7(이미 한글닉 있는 사람은 그대로, 바꾸려면 /한글닉 가져오기 덮어쓰기)")));
+            }
             case "리로드", "reload" -> {
                 reloadConfig();
                 warnConfigError(s);
@@ -536,6 +570,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         s.sendMessage(color("&e/" + label + " 설정 <마크닉> <한글닉> &7- 한글닉 지정 (접속 안 해도 됨)"));
         s.sendMessage(color("&e/" + label + " 해제 <마크닉> &7- 한글닉 지우기"));
         s.sendMessage(color("&e/" + label + " 목록 &7- 등록된 한글닉 보기"));
+        s.sendMessage(color("&e/" + label + " 가져오기 [덮어쓰기] &7- 예전 NickName 플러그인 닉네임 가져오기"));
         s.sendMessage(color("&e/" + label + " 바이옴 &7- 지금 바이옴이 어떻게 읽히는지 (한글 이름 확인용)"));
         s.sendMessage(color("&e/" + label + " 순위확인 [코블달러] &7- 순위가 어떻게 계산되는지·1등 NPC 명령어 결과"));
         s.sendMessage(color("&e/" + label + " 순위적용 [코블달러] &7- 지금 1등으로 NPC 명령어 바로 다시 실행"));
@@ -614,6 +649,31 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         for (Map.Entry<UUID, String[]> e : nicks.entrySet())
             if (e.getValue()[0].equalsIgnoreCase(name)) return e.getKey();
         return null;
+    }
+
+    /**
+     * 예전 NickName 플러그인(plugins/NickName/config.yml 의 nicknames: UUID → 닉) 을 한글닉으로 가져옴.
+     * overwrite=false 면 이미 한글닉이 있는 사람은 건너뜀. 반환: 가져온 수 (파일 없으면 -1)
+     */
+    int importNickNamePlugin(boolean overwrite) {
+        File f = new File(getDataFolder().getParentFile(), "NickName/config.yml");
+        if (!f.exists()) return -1;
+        ConfigurationSection sec = YamlConfiguration.loadConfiguration(f).getConfigurationSection("nicknames");
+        if (sec == null) return 0;
+        int n = 0, skip = 0;
+        for (String key : sec.getKeys(false)) {
+            String nick = sec.getString(key);
+            if (nick == null || nick.isBlank()) continue;
+            UUID id;
+            try { id = UUID.fromString(key); } catch (IllegalArgumentException e) { continue; }
+            if (nicks.containsKey(id) && !overwrite) { skip++; continue; }
+            String name = Bukkit.getOfflinePlayer(id).getName();
+            nicks.put(id, new String[]{name == null ? "?" : name, nick.trim()});
+            n++;
+        }
+        if (n > 0) saveNicks();
+        getLogger().info("NickName 플러그인 닉네임 " + n + "개 가져옴" + (skip > 0 ? " (이미 한글닉 있어서 건너뜀 " + skip + ")" : ""));
+        return n;
     }
 
     private void loadNicks() {
