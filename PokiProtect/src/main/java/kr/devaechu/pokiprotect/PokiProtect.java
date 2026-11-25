@@ -20,6 +20,8 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -35,10 +37,14 @@ import java.util.Set;
  * 1) 시설물 보호: protected 목록 블록은 부수기·폭발·피스톤·불로 못 없앰 (우클릭 사용은 그대로).
  *    유저가 직접 설치한 자리는 placed.yml 에 적어두고 보호하지 않음 → 월드에 원래 있던 것만 보호
  * 2) town-only 목록 블록(포켓스낵)은 Towny 마을 땅에서만 설치 가능
+ * 3) town-containers 목록 블록(모드 상자)은 마을 땅 안에서 그 마을 주민·알바(Towny 신뢰)·운영진만 열기·부수기
  * 야생 상자는 건드리지 않음 → 그대로 파밍 가능
  */
 public final class PokiProtect extends JavaPlugin implements Listener {
-    private final Set<String> prot = new HashSet<>(), townOnly = new HashSet<>();
+    private final Set<String> prot = new HashSet<>(), townOnly = new HashSet<>(), townBox = new HashSet<>();
+    private final java.util.Map<java.util.UUID, Long> lastMsg = new java.util.HashMap<>();
+    private Method getResident, hasResident, hasTrusted;
+    private boolean allowTrusted = true;
     private final Set<String> placed = new HashSet<>();
     private File placedFile;
     private Method getTownAt;
@@ -75,7 +81,19 @@ public final class PokiProtect extends JavaPlugin implements Listener {
             saveConfig();
             getLogger().info("config.yml: 이동석 보호를 *waystone* 으로 넓힘");
         }
-        prot.clear(); townOnly.clear();
+        // v4: 마을 안 모드 상자 (정교한 상자·가방, 톰의 저장소)
+        if (getConfig().getInt("config-version", 1) < 4) {
+            if (!getConfig().isSet("town-containers"))
+                getConfig().set("town-containers", List.of("sophisticatedstorage:*", "sophisticatedbackpacks:*", "toms_storage:*"));
+            if (!getConfig().isSet("town-containers-allow-trusted")) getConfig().set("town-containers-allow-trusted", true);
+            if (!getConfig().isSet("messages.town-container")) getConfig().set("messages.town-container", "&c이 마을 주민·알바만 쓸 수 있어요.");
+            getConfig().set("config-version", 4);
+            saveConfig();
+            getLogger().info("config.yml: 마을 안 모드 상자 보호(town-containers) 추가");
+        }
+        prot.clear(); townOnly.clear(); townBox.clear();
+        for (String s : getConfig().getStringList("town-containers")) townBox.add(s.toLowerCase(Locale.ROOT));
+        allowTrusted = getConfig().getBoolean("town-containers-allow-trusted", true);
         for (String s : getConfig().getStringList("protected")) prot.add(s.toLowerCase(Locale.ROOT));
         for (String s : getConfig().getStringList("town-only")) townOnly.add(s.toLowerCase(Locale.ROOT));
     }
@@ -87,6 +105,11 @@ public final class PokiProtect extends JavaPlugin implements Listener {
             Class<?> c = Class.forName("com.palmergames.bukkit.towny.TownyAPI", true, pl.getClass().getClassLoader());
             townyApi = c.getMethod("getInstance").invoke(null);
             getTownAt = c.getMethod("getTown", Location.class);
+            getResident = c.getMethod("getResident", Player.class);
+            Class<?> town = getTownAt.getReturnType(), res = getResident.getReturnType();
+            hasResident = town.getMethod("hasResident", res);
+            try { hasTrusted = town.getMethod("hasTrustedResident", res); }
+            catch (NoSuchMethodException ex) { getLogger().warning("이 Towny 버전엔 마을 신뢰(알바) 기능이 없음 → 마을 상자는 주민만"); }
         } catch (ReflectiveOperationException | RuntimeException e) {
             getLogger().warning("Towny API 를 못 읽음: " + e);
         }
@@ -95,6 +118,30 @@ public final class PokiProtect extends JavaPlugin implements Listener {
     private boolean inTown(Location l) {
         if (getTownAt == null) return false;
         try { return getTownAt.invoke(townyApi, l) != null; } catch (ReflectiveOperationException | RuntimeException e) { return false; }
+    }
+
+    /** 마을 상자를 쓸 수 있는지: 마을 밖이면 누구나, 마을 안이면 그 마을 주민·알바·운영진 */
+    private boolean mayUseTownBox(Player p, Location l) {
+        if (getTownAt == null || p.hasPermission("poki.protect.bypass")) return true;
+        try {
+            Object town = getTownAt.invoke(townyApi, l);
+            if (town == null) return true;
+            Object r = getResident.invoke(townyApi, p);
+            if (r == null) return false;
+            if (Boolean.TRUE.equals(hasResident.invoke(town, r))) return true;
+            return allowTrusted && hasTrusted != null && Boolean.TRUE.equals(hasTrusted.invoke(town, r));
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            getLogger().warning("마을 상자 확인 실패 (허용): " + e);
+            return true;
+        }
+    }
+
+    private void tell(Player p, String k) {
+        long now = System.currentTimeMillis();
+        Long t = lastMsg.get(p.getUniqueId());
+        if (t != null && now - t < 2000) return; // 연타해도 2초에 한 번만
+        lastMsg.put(p.getUniqueId(), now);
+        p.sendMessage(msg(k));
     }
 
     private String msg(String k) { return ChatColor.translateAlternateColorCodes('&', getConfig().getString("messages." + k, k)); }
@@ -155,6 +202,27 @@ public final class PokiProtect extends JavaPlugin implements Listener {
         if (in(prot, b) && placed.add(key(b))) savePlaced();
     }
 
+    // ---------- 마을 안 모드 상자 ----------
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onUse(PlayerInteractEvent e) {
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK && e.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        Block b = e.getClickedBlock();
+        if (b == null || townBox.isEmpty() || !in(townBox, b)) return;
+        if (mayUseTownBox(e.getPlayer(), b.getLocation())) return;
+        e.setCancelled(true);
+        e.setUseInteractedBlock(org.bukkit.event.Event.Result.DENY);
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK) tell(e.getPlayer(), "town-container");
+    }
+
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onBoxBreak(BlockBreakEvent e) {
+        Block b = e.getBlock();
+        if (townBox.isEmpty() || !in(townBox, b) || mayUseTownBox(e.getPlayer(), b.getLocation())) return;
+        e.setCancelled(true);
+        tell(e.getPlayer(), "town-container");
+    }
+
     // ---------- 부수기 ----------
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -207,6 +275,8 @@ public final class PokiProtect extends JavaPlugin implements Listener {
         }
         s.sendMessage(ChatColor.GOLD + "보호 시설물: " + ChatColor.WHITE + String.join(", ", prot));
         s.sendMessage(ChatColor.GOLD + "마을 전용: " + ChatColor.WHITE + String.join(", ", townOnly));
+        s.sendMessage(ChatColor.GOLD + "마을 상자 (주민" + (allowTrusted ? "·알바" : "") + "만): " + ChatColor.WHITE + String.join(", ", townBox)
+                + (hasTrusted == null && getTownAt != null ? ChatColor.GRAY + " (이 Towny 엔 알바 기능 없음)" : ""));
         s.sendMessage(ChatColor.GRAY + "유저가 설치한 시설물 " + placed.size() + "개 (보호 안 함) · /시설보호 리로드");
         return true;
     }

@@ -1,4 +1,4 @@
-config-version: 3
+config-version: 4
 
 # 보호할 시설물 (모드 블록 id) — 부수기·폭발·피스톤·불로 못 없앰. 우클릭 사용은 그대로
 #  월드에 원래 있던 것만 보호. 유저가 직접 설치한 건 기록해 두고 보호 안 함 (본인이 다시 캘 수 있게)
@@ -13,7 +13,16 @@ protected:
 town-only:
   - cobblemon:poke_snack
 
+# 마을 땅 안에 있으면 그 마을 주민·알바(Towny 마을 신뢰)·운영진만 열기·부수기 할 수 있는 블록 (모드 상자)
+#  야생에 있는 건 아무나 사용 가능. * 사용 가능
+town-containers:
+  - sophisticatedstorage:*     # 정교한 상자·통·셜커·컨트롤러
+  - sophisticatedbackpacks:*   # 바닥에 놓은 정교한 가방
+  - toms_storage:*             # 톰의 저장소 (터미널으로 상자를 빼 갈 수 있어서 같이)
+town-containers-allow-trusted: true   # false 면 알바(신뢰)는 못 열고 주민만
+
 messages:
   protected: "&c보호된 시설물이라 부술 수 없어요."
   town-only: "&c이 블록은 마을 땅에서만 설치할 수 있어요."
+  town-container: "&c이 마을 주민·알바만 쓸 수 있어요."
   no-towny: "&c마을 플러그인을 찾을 수 없어서 설치할 수 없어요. 운영진에게 알려주세요."
