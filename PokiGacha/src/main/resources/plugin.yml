@@ -9,7 +9,7 @@ commands:
     description: 뽑기 확률 보기 / 운영진 편집
     aliases: [pokigacha, gacha]
   뽑기권:
-    description: 뽑기권 지급 (운영진·콘솔)
+    description: 뽑기권 지급·우편 (운영진·콘솔)
     aliases: [gachaticket]
 permissions:
   poki.gacha.admin:
