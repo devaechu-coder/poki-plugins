@@ -140,7 +140,9 @@ public final class PokiGacha extends JavaPlugin implements Listener {
         int amount = r.item != null ? r.item.getAmount() : 0;
         if (r.item != null) {
             for (ItemStack left : p.getInventory().addItem(r.item.clone()).values()) {
-                p.getWorld().dropItemNaturally(p.getLocation(), left);
+                // 인벤이 꽉 차면 우편함 (없으면 예전처럼 바닥)
+                if (!Mailbox.mail(p.getUniqueId(), left, left.getAmount(), "뽑기 당첨")) p.getWorld().dropItemNaturally(p.getLocation(), left);
+                else p.sendMessage(c(PREFIX + "&e인벤토리가 꽉 차서 당첨 아이템은 우편함으로 보냈어요 &f/우편함"));
             }
         }
         for (String cmd : r.commands) {
@@ -195,6 +197,11 @@ public final class PokiGacha extends JavaPlugin implements Listener {
             for (ItemStack s : rest.values()) notIn += s.getAmount();
             left -= n;
             if (notIn > 0) {
+                // 포키 우편함이 있으면 우편함으로, 없으면 예전처럼 보관 (/뽑기 받기)
+                if (Mailbox.mail(p.getUniqueId(), tickets.make(pool, 1), notIn + left, "뽑기권")) {
+                    p.sendMessage(c(PREFIX + "&e인벤토리가 꽉 차서 " + Gui.ChatStrip.strip(pool.display) + " " + (notIn + left) + "장은 우편함으로 보냈어요 &f/우편함"));
+                    return;
+                }
                 addPending(p.getUniqueId(), pool.name, notIn + left);
                 p.sendMessage(c(PREFIX + "&e인벤토리가 꽉 차서 " + Gui.ChatStrip.strip(pool.display) + " " + (notIn + left) + "장은 보관 중이에요. 칸을 비우고 &f/뽑기 받기"));
                 return;

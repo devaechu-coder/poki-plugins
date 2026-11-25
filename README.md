@@ -14,6 +14,7 @@
 | [PokiMaintenance](PokiMaintenance/) | 점검 모드 — 점검 중엔 운영진만 접속 (`/점검 시작 22:00`, `/점검 끝`), 런처에 점검 표시 |
 | [PokiTown](PokiTown/) | 마을 — Towny 마을 정보를 포키폰 마을 앱·머리 위 마을 표시에 넘겨줌 (`/마을앱`) |
 | [PokiAfk](PokiAfk/) | 잠수 킥 — 1시간 동안 활동 없으면 킥, 1분 전 경고 (`/잠수`) |
+| [PokiMail](PokiMail/) | 우편함 — 운영진 보상을 접속 안 해도 받게, 인벤이 꽉 차면 우편함으로 (`/우편함`, `/우편`) |
 
 각 폴더에서 `mvn package` 로 빌드.
 
