@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  *  me(나)                      → "ME 마을UUID 역할 권한들 목록공개 OP" + 받은 초대 "INV 마을UUID 이름 표시 보낸사람 이장 주민수"
  *  towns(나)                   → "T ... 주민이름들(OP만)" 마을 목록 (유저는 목록공개가 꺼져 있으면 빈 목록)
  *  town(나, 마을UUID)          → "T ... 스폰있음" + 주민 "R ..." + 알바 "A ..."
- *  act(나, 행동, 대상)         → "OK" / "ERR:이유" — 그 사람이 Towny 명령어를 친 것처럼 (본인 권한, /confirm 자동)
+ *  act(나, 행동, 대상)         → "OK" / "ERR:이유" (spawn_town 은 OP 만) — 그 사람이 Towny 명령어를 친 것처럼 (본인 권한, /confirm 자동)
  *  onChange(리스너)            → 접속 중인 사람의 마을 상태가 바뀌면 그 사람 UUID
  *  onNotify(리스너)            → 포키폰 알림 (받을 사람 UUID, 문구)
  */
@@ -177,6 +177,12 @@ public final class PokiTownApi {
             case "accept", "deny" -> {
                 if (!TOWN.matcher(a).matches()) return "ERR:마을 이름을 확인해 주세요";
                 cmd = "towny:invite " + (action.equals("accept") ? TownySettings.getAcceptCommand() : TownySettings.getDenyCommand()) + " " + a;
+            }
+            case "spawn_town" -> {
+                // 운영진 전용: 아무 마을 스폰으로 (Towny 관리자라 공개 여부·비용 무시)
+                if (!pl.isOp()) return "ERR:운영진만 다른 마을 스폰으로 갈 수 있어요";
+                if (!TOWN.matcher(a).matches()) return "ERR:마을 이름을 확인해 주세요";
+                cmd = "towny:town spawn " + a;
             }
             case "leave" -> cmd = "towny:town leave";
             case "spawn" -> cmd = "towny:town spawn";
