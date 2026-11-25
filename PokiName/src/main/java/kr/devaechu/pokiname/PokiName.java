@@ -51,6 +51,8 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
 
     /** uuid -> [마크 닉, 한글닉] */
     private final Map<UUID, String[]> nicks = new LinkedHashMap<>();
+    /** 채팅용 한글닉 (채팅 이벤트는 비동기라 따로, 메인 스레드에서만 씀) */
+    private final Map<UUID, String> chatNick = new java.util.concurrent.ConcurrentHashMap<>();
     private File dataFile;
     private static final String TAG = "pokiname_tag";
     /** 플레이어 머리 위 한글닉 글씨 */
@@ -158,8 +160,23 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
         refreshHeaders();
     }
 
+    /** 채팅: "한글닉: 메시지" (NickName 플러그인이 하던 것). 한글닉 없는 사람은 안 건드림 */
+    @EventHandler(priority = org.bukkit.event.EventPriority.NORMAL, ignoreCancelled = true)
+    public void onChat(org.bukkit.event.player.AsyncPlayerChatEvent e) {
+        FileConfiguration c = getConfig();
+        if (!c.getBoolean("chat.enabled", true)) return;
+        String nick = chatNick.get(e.getPlayer().getUniqueId());
+        if (nick == null || nick.isBlank()) return;
+        String fmt = color(c.getString("chat.format", "{nick}&f: {message}")
+                .replace("{nick}", nick).replace("{name}", e.getPlayer().getName()));
+        // String.format 형식이라 % 는 %% 로, 메시지 자리는 %2$s
+        fmt = fmt.replace("%", "%%").replace("{message}", "%2$s");
+        try { e.setFormat(fmt); } catch (RuntimeException ignored) { }
+    }
+
     @EventHandler
     public void onQuit(PlayerQuitEvent e) {
+        chatNick.remove(e.getPlayer().getUniqueId());
         UUID qid = e.getPlayer().getUniqueId();
         removeTag(qid);
         titles.remove(qid);
@@ -176,6 +193,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     private void apply(Player p) {
         FileConfiguration c = getConfig();
         String[] v = nicks.get(p.getUniqueId());
+        if (v != null) chatNick.put(p.getUniqueId(), v[1]); else chatNick.remove(p.getUniqueId());
         Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
         String teamName = teamName(p.getUniqueId());
         Team team = sb.getTeam(teamName);
@@ -280,7 +298,7 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
     }
 
     /** 지금 config 형식 버전 — 옛 config 를 고쳐줄 때 올림 */
-    private static final int CONFIG_VERSION = 6;
+    private static final int CONFIG_VERSION = 7;
     /** 귓속말 명령어 (마크 기본 + Essentials 별칭) */
     private static final String[] WHISPER = {"msg", "tell", "w", "whisper", "m", "t", "pm"};
 
@@ -393,6 +411,13 @@ public final class PokiName extends JavaPlugin implements Listener, CommandExecu
             c.set("title.town.max-length", 8);
             c.setComments("title.town.max-length", List.of("Towny 마을 이름이 이보다 길면 … 로 자름 (운영진이 /마을앱 표시 로 정한 이름은 그대로). 0 = 안 자름"));
             getLogger().info("config.yml: 머리 위 마을 표시 설정(title.town) 추가 — 꺼진 상태");
+        }
+        // v7: 채팅 이름 (NickName 플러그인에서 옮김)
+        if (!c.contains("chat", true)) {
+            c.set("chat.enabled", true);
+            c.setComments("chat", List.of("채팅에 한글닉으로 보이기 (한글닉 없는 사람은 그대로). {nick} 한글닉, {name} 마크닉, {message} 메시지"));
+            c.set("chat.format", "{nick}&f: {message}");
+            getLogger().info("config.yml: 채팅 한글닉 설정(chat) 추가");
         }
         c.set("config-version", CONFIG_VERSION);
         saveConfig();

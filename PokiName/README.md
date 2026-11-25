@@ -135,6 +135,7 @@ main 에 올리면 GitHub Actions 가 빌드하고, pom.xml 버전이 새로우�
 
 ## 버전
 
+- 2.0.1 — 채팅에 한글닉 ("한글닉: 메시지", NickName 플러그인이 하던 것). config `chat.enabled` · `chat.format`
 - 2.0.0 — 글씨 칭호(`/칭호 만들기·수정·삭제`, 그라데이션 색) + 장착 칸 2개(이미지·글씨 하나씩, 옛 장착은 이미지 칸으로 · player-titles.yml.old 백업) + 머리 위 마을 표시(PokiTown, `title.town.enabled` — 처음엔 꺼짐). Tab 은 이미지 > 글씨 하나만. 칭호 파일 저장 비동기, 이름표 글씨는 바뀔 때만 갱신
 - 1.8.0 — 예전 NickName 플러그인 합치기: 처음 켤 때 plugins/NickName/config.yml 닉네임을 한글닉으로 가져옴(이미 있는 사람은 그대로), `/한글닉 가져오기 [덮어쓰기]`, `/닉네임설정 <플레이어> <닉|삭제>` 호환, NickName 이 꺼져 있으면 `%nickname_name%`·`%nickname_raw%` 도 한글닉으로 대답
 - 1.7.4 — 칭호 `포키_1호_커플` (배지 E118)
