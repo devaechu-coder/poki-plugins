@@ -3,7 +3,7 @@ version: ${project.version}
 main: kr.devaechu.pokiprotect.PokiProtect
 api-version: '1.21'
 softdepend: [Towny]
-description: 야생 시설물(기술머신 기계·회복 머신·PC) 보호 + 포켓스낵은 마을에서만
+description: 야생 시설물 보호 + 포켓스낵은 마을에서만 + 마을 안 모드 상자는 주민·알바만
 commands:
   시설보호:
     description: 설정 다시 읽기 / 보호 블록 목록
