@@ -2,7 +2,7 @@ name: PokiGacha
 version: ${project.version}
 main: kr.devaechu.pokigacha.PokiGacha
 api-version: '1.21'
-softdepend: [PlaceholderAPI, PokiName]
+softdepend: [PlaceholderAPI, PokiName, PokiMail]
 description: 포키 뽑기권 — 인게임에서 편집하는 뽑기, 거래 불가 뽑기권, 치장 중복 방지
 commands:
   뽑기:

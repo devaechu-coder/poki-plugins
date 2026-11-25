@@ -1,0 +1,14 @@
+# 포키 우편함 (PokiMail)
+# 우편은 plugins/PokiMail/mail.yml 에 사람별로 저장 (바뀔 때만, 비동기)
+
+# 받지 않은 우편을 며칠 뒤에 지울지. 0 = 안 지움
+expire-days: 0
+
+# 한 사람 우편함 최대 개수 (넘으면 가장 오래된 것부터 지움 — 운영진 알림)
+max-per-player: 200
+
+# 접속할 때 우편이 있으면 알려줄지
+notify-on-join: true
+
+# 받은 사람이 보는 보낸 이름 (명령어로 보낼 때 기본값)
+default-from: '포키 운영진'

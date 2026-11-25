@@ -1,0 +1,20 @@
+name: PokiMail
+version: ${project.version}
+main: kr.devaechu.pokimail.PokiMail
+api-version: '1.21'
+author: DevAechu
+description: 포키 우편함 — 운영진 보상을 접속 안 해도 받게, 인벤이 꽉 차면 우편함으로
+commands:
+  pokimail:
+    description: 우편 보내기·지급 (운영진)
+    usage: /우편 <지급|보내기|손|명령|보기|회수|리로드>
+    aliases: [우편]
+    permission: pokimail.admin
+  pokimailbox:
+    description: 내 우편함 열기
+    usage: /우편함 [모두받기]
+    aliases: [우편함]
+permissions:
+  pokimail.admin:
+    description: /우편 명령어 (보내기·지급·회수)
+    default: op
