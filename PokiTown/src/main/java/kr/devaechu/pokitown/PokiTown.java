@@ -191,6 +191,8 @@ public final class PokiTown extends JavaPlugin implements Listener, TabCompleter
         return n;
     }
 
+    boolean customDisplay(Town t) { return displayOverride.containsKey(t.getUUID()); }
+
     String color(Town t) {
         String c = colorOverride.get(t.getUUID());
         return c != null ? c : defaultColor;

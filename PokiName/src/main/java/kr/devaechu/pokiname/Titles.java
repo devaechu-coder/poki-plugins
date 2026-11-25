@@ -40,20 +40,22 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * 칭호.
- * - titles.yml      : 칭호 정의 (id, 이름, 리소스팩 글자 코드, 채팅·Tab 용 글씨)
- * - player-titles.yml : 플레이어별 가진 칭호 / 장착한 칭호
- * 머리 위에는 리소스팩 배지 이미지(글자 하나)를 텍스트 디스플레이로 이름표 위에 띄운다.
- * 채팅·Tab 에는 배지가 한 줄에 안 들어가서 색 글씨를 쓴다.
+ * 칭호. 두 종류 — 이미지(리소스팩 배지) / 글씨(리소스팩 없이 게임 안에서 바로 만듦). 칸이 따로라 하나씩 같이 장착.
+ * - titles.yml      : 칭호 정의 (id, 종류, 이름, 배지 글자 코드 또는 글씨 색, 채팅·Tab 용 글씨)
+ * - player-titles.yml : 플레이어별 가진 칭호 / 칸별 장착 칭호 (equipped-image, equipped-text)
+ * 머리 위: 이미지 배지는 텍스트 디스플레이로 이름표 위에, 글씨 칭호는 한글닉 이름표 안 한 줄 위 (엔티티 안 늘림).
+ * Tab: 이미지 칭호(chat 색 글씨) > 글씨 칭호 순으로 하나만.
+ * 파일 쓰기는 바뀔 때만, 비동기(한 줄 작업자 스레드 — 저장 순서 유지).
  */
 final class Titles implements CommandExecutor, TabCompleter {
 
     static final String TAG = "pokiname_title";
     static final String ADMIN = "pokiname.title.admin";
     /** 기본 titles.yml 의 version — 기본 칭호 목록을 바꿀 때 올림 (서버의 옛 titles.yml 을 새 것으로 교체) */
-    static final int DEFS_VERSION = 4;
+    static final int DEFS_VERSION = 5;
 
-    record Def(String id, String name, String glyph, String chat, String tier, boolean announceFirst) { }
+    /** text=true 면 글씨 칭호 (glyph 없음, color = #색 또는 #색1-#색2) */
+    record Def(String id, String name, String glyph, String chat, String tier, boolean announceFirst, boolean text, String color) { }
 
     /** 서버 최초 획득 기록 */
     record First(UUID uuid, String name, String at) { }
@@ -61,8 +63,18 @@ final class Titles implements CommandExecutor, TabCompleter {
     private static final class Owned {
         String name;
         final Set<String> owned = new LinkedHashSet<>();
+        /** 이미지 칸 */
         String equipped;
+        /** 글씨 칸 */
+        String equippedText;
     }
+
+    /** 파일 쓰기 전용 (메인 스레드에서 파일 안 씀) */
+    private final java.util.concurrent.ExecutorService io = java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "PokiName-titles-io");
+        t.setDaemon(true);
+        return t;
+    });
 
     private final PokiName plugin;
     private final Map<String, Def> defs = new LinkedHashMap<>();
@@ -103,9 +115,21 @@ final class Titles implements CommandExecutor, TabCompleter {
                         cur.createSection("titles." + id, ds.getConfigurationSection(id).getValues(false));
                         added++;
                     }
+                    // v5: 종류(type) 칸 — 옛 칭호는 전부 이미지 칭호
+                    int typed = 0;
+                    ConfigurationSection cs = cur.getConfigurationSection("titles");
+                    if (cs != null) for (String id : cs.getKeys(false)) {
+                        if (cs.isString(id + ".type")) continue;
+                        cs.set(id + ".type", cs.isString(id + ".glyph") ? "image" : "text");
+                        typed++;
+                    }
+                    if (v < 5) {
+                        File bak = new File(plugin.getDataFolder(), "titles.yml.v" + v + ".old");
+                        if (!bak.exists()) java.nio.file.Files.copy(defsFile.toPath(), bak.toPath());
+                    }
                     cur.set("version", DEFS_VERSION);
                     cur.save(defsFile);
-                    plugin.getLogger().info("새 기본 칭호 " + added + "개를 titles.yml 에 추가");
+                    plugin.getLogger().info("새 기본 칭호 " + added + "개를 titles.yml 에 추가" + (typed > 0 ? ", 칭호 " + typed + "개에 종류(type) 표시 (옛 파일: titles.yml.v" + v + ".old)" : ""));
                 } catch (Exception e) {
                     plugin.getLogger().warning("titles.yml 새 칭호 추가 실패: " + e);
                 }
@@ -125,23 +149,47 @@ final class Titles implements CommandExecutor, TabCompleter {
         return plugin.getConfig().getBoolean("title.enabled", true);
     }
 
-    /** 장착한 칭호 (없으면 null) */
+    /** 이미지 칸에 장착한 칭호 (없으면 null) */
     Def equipped(UUID id) {
         if (!enabled()) return null;
         Owned o = players.get(id);
         if (o == null || o.equipped == null) return null;
-        return defs.get(o.equipped);
+        Def d = defs.get(o.equipped);
+        return d == null || d.text() ? null : d;
+    }
+
+    /** 글씨 칸에 장착한 칭호 (없으면 null) */
+    Def equippedText(UUID id) {
+        if (!enabled()) return null;
+        Owned o = players.get(id);
+        if (o == null || o.equippedText == null) return null;
+        Def d = defs.get(o.equippedText);
+        return d == null || !d.text() ? null : d;
+    }
+
+    /** Tab·채팅용 칭호: 이미지 칭호 > 글씨 칭호 순으로 하나 */
+    Def listTitle(UUID id) {
+        Def d = equipped(id);
+        return d != null ? d : equippedText(id);
     }
 
     /** 채팅·Tab 용 칭호 글씨 + 띄어쓰기. 없으면 "" */
     String chatPrefix(UUID id) {
-        Def d = equipped(id);
+        Def d = listTitle(id);
         if (d == null) return "";
         String fmt = plugin.getConfig().getString("title.chat-format", "{title}&r ");
         return fmt.replace("{title}", d.chat());
     }
 
-    /** PlaceholderAPI 용: 칭호 이름 (없으면 "") */
+    /** 머리 위 이름표 안에 넣을 글씨 칭호 한 줄 (색 적용됨). 없으면 "" */
+    String overheadTextLine(UUID id) {
+        if (!plugin.getConfig().getBoolean("title.text-overhead", true)) return "";
+        Def d = equippedText(id);
+        if (d == null) return "";
+        return PokiName.color(plugin.getConfig().getString("title.text-format", "{title}").replace("{title}", d.chat()));
+    }
+
+    /** PlaceholderAPI 용: 이미지 칭호 이름 (없으면 "") */
     String nameOf(UUID id) {
         Def d = equipped(id);
         return d == null ? "" : d.name();
@@ -238,20 +286,76 @@ final class Titles implements CommandExecutor, TabCompleter {
                     s.sendMessage(PokiName.color("&c가지고 있지 않은 칭호예요. &7/" + label + " &7로 목록 보기"));
                     return true;
                 }
-                o.equipped = d.id();
+                if (d.text()) o.equippedText = d.id(); else o.equipped = d.id();
                 o.name = p.getName();
                 save();
                 plugin.refresh(p);
-                s.sendMessage(PokiName.color("&a칭호를 장착했어요: " + d.chat()));
+                s.sendMessage(PokiName.color("&a" + (d.text() ? "글씨" : "이미지") + " 칭호를 장착했어요: " + d.chat()));
             }
             case "해제", "unequip" -> {
                 if (!(s instanceof Player p)) { s.sendMessage(PokiName.color("&c플레이어만 쓸 수 있어요.")); return true; }
                 Owned o = players.get(p.getUniqueId());
-                if (o == null || o.equipped == null) { s.sendMessage(PokiName.color("&7장착한 칭호가 없어요.")); return true; }
-                o.equipped = null;
+                if (o == null || (o.equipped == null && o.equippedText == null)) { s.sendMessage(PokiName.color("&7장착한 칭호가 없어요.")); return true; }
+                String which = a.length > 1 ? a[1] : "전체";
+                boolean img = which.equals("이미지") || which.equalsIgnoreCase("image");
+                boolean txt = which.equals("글씨") || which.equalsIgnoreCase("text");
+                if (!img && !txt) { img = true; txt = true; }
+                if (img) o.equipped = null;
+                if (txt) o.equippedText = null;
                 save();
                 plugin.refresh(p);
-                s.sendMessage(PokiName.color("&a칭호를 뺐어요."));
+                s.sendMessage(PokiName.color("&a" + (img && txt ? "칭호를 모두" : img ? "이미지 칭호를" : "글씨 칭호를") + " 뺐어요."));
+            }
+            case "만들기", "create", "수정", "edit" -> {
+                if (!admin) { noPerm(s); return true; }
+                boolean create = sub.equals("만들기") || sub.equals("create");
+                if (a.length < 3) {
+                    s.sendMessage(PokiName.color("&e/" + label + " " + (create ? "만들기" : "수정") + " <이름> <색> &7- 띄어쓰기는 _ · 색: #FF7F7F 또는 그라데이션 #FF7F7F-#FFD36B"));
+                    return true;
+                }
+                String col = normColor(a[2]);
+                if (col == null) { s.sendMessage(PokiName.color("&c색은 #FF7F7F 나 #FF7F7F-#FFD36B (그라데이션), &e 같은 색 코드로 적어 주세요.")); return true; }
+                if (create) {
+                    String id = a[1].trim().replace(' ', '_').toLowerCase(Locale.ROOT);
+                    String name = a[1].replace('_', ' ').trim();
+                    if (name.isEmpty() || name.length() > 16) { s.sendMessage(PokiName.color("&c칭호 이름은 1~16자로 적어 주세요.")); return true; }
+                    if (defs.containsKey(id) || find(a[1]) != null) { s.sendMessage(PokiName.color("&c이미 있는 칭호예요: " + a[1] + " &7(색만 바꾸려면 /" + label + " 수정)")); return true; }
+                    Def d = textDef(id, name, col, "글씨", true);
+                    defs.put(id, d);
+                    saveDefs();
+                    s.sendMessage(PokiName.color("&a글씨 칭호를 만들었어요: " + d.chat() + " &7(명령어 이름: &f" + id + "&7) → &f/" + label + " 지급 <마크닉> " + id));
+                } else {
+                    Def old = find(a[1]);
+                    if (old == null || !old.text()) { s.sendMessage(PokiName.color("&c그런 글씨 칭호가 없어요: " + a[1] + " &7(이미지 칭호는 titles.yml 에서)")); return true; }
+                    Def d = textDef(old.id(), old.name(), col, old.tier(), old.announceFirst());
+                    defs.put(old.id(), d);
+                    saveDefs();
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        Owned o = players.get(p.getUniqueId());
+                        if (o != null && old.id().equals(o.equippedText)) plugin.refresh(p);
+                    }
+                    s.sendMessage(PokiName.color("&a색을 바꿨어요: " + d.chat()));
+                }
+            }
+            case "삭제", "delete" -> {
+                if (!admin) { noPerm(s); return true; }
+                if (a.length < 2) { s.sendMessage(PokiName.color("&e/" + label + " 삭제 <글씨 칭호> &7- 가진 사람들한테서도 회수")); return true; }
+                Def d = find(join(a, 1));
+                if (d == null || !d.text()) { s.sendMessage(PokiName.color("&c그런 글씨 칭호가 없어요: " + join(a, 1) + " &7(이미지 칭호는 titles.yml 에서)")); return true; }
+                defs.remove(d.id());
+                firsts.remove(d.id());
+                int had = 0;
+                for (Map.Entry<UUID, Owned> e : players.entrySet()) {
+                    Owned o = e.getValue();
+                    if (o.owned.remove(d.id())) had++;
+                    if (d.id().equals(o.equippedText)) o.equippedText = null;
+                    if (d.id().equals(o.equipped)) o.equipped = null;
+                }
+                saveDefs();
+                save();
+                saveFirsts();
+                for (Player p : Bukkit.getOnlinePlayers()) plugin.refresh(p);
+                s.sendMessage(PokiName.color("&a글씨 칭호 " + d.chat() + " &a를 지웠어요 &7(가지고 있던 " + had + "명한테서 회수)"));
             }
             case "지급", "give" -> {
                 if (!admin) { noPerm(s); return true; }
@@ -264,8 +368,8 @@ final class Titles implements CommandExecutor, TabCompleter {
                 if (t.getName() != null) o.name = t.getName();
                 int added = 0;
                 for (Def d : list) if (o.owned.add(d.id())) added++;
-                boolean autoEquip = o.equipped == null && list.size() == 1;
-                if (autoEquip) o.equipped = list.get(0).id();
+                boolean autoEquip = list.size() == 1 && (list.get(0).text() ? o.equippedText == null : o.equipped == null);
+                if (autoEquip) { if (list.get(0).text()) o.equippedText = list.get(0).id(); else o.equipped = list.get(0).id(); }
                 save();
                 // 서버 최초 — 칭호 하나씩 줄 때만 (전체 지급은 테스트용이라 최초로 안 침)
                 if (list.size() == 1) checkFirst(t, list.get(0));
@@ -290,6 +394,7 @@ final class Titles implements CommandExecutor, TabCompleter {
                 for (Def d : list) {
                     if (o.owned.remove(d.id())) removed++;
                     if (d.id().equals(o.equipped)) o.equipped = null;
+                    if (d.id().equals(o.equippedText)) o.equippedText = null;
                 }
                 save();
                 Player online = Bukkit.getPlayer(id);
@@ -306,14 +411,14 @@ final class Titles implements CommandExecutor, TabCompleter {
                 for (String tid : o.owned) {
                     Def d = defs.get(tid);
                     s.sendMessage(PokiName.color("&7- " + (d == null ? "&c" + tid + " (정의 없음)" : d.chat() + " &8" + tid)
-                            + (tid.equals(o.equipped) ? " &a[장착 중]" : "")));
+                            + (tid.equals(o.equipped) || tid.equals(o.equippedText) ? " &a[장착 중]" : "")));
                 }
             }
             case "전체", "all" -> {
                 if (!admin) { noPerm(s); return true; }
                 s.sendMessage(PokiName.color("&e칭호 전체 (" + defs.size() + "개)"));
                 for (Def d : defs.values())
-                    s.sendMessage(PokiName.color("&7- &8[" + d.tier() + "] " + d.chat() + " &7명령어: &f" + d.id()));
+                    s.sendMessage(PokiName.color("&7- &8[" + (d.text() ? "글씨" : "이미지") + (d.tier().isEmpty() ? "" : "·" + d.tier()) + "] " + d.chat() + " &7명령어: &f" + d.id()));
             }
             case "최초", "firsts" -> {
                 if (!admin) { noPerm(s); return true; }
@@ -367,29 +472,39 @@ final class Titles implements CommandExecutor, TabCompleter {
             p.sendMessage(PokiName.color("&7아직 가진 칭호가 없어요."));
             return;
         }
-        p.sendMessage(PokiName.color("&e&l내 칭호 &7(" + o.owned.size() + "개) &8- 글씨를 누르면 장착"));
-        for (String tid : o.owned) {
-            Def d = defs.get(tid);
-            if (d == null) continue;
-            boolean on = tid.equals(o.equipped);
-            TextComponent line = new TextComponent(TextComponent.fromLegacyText(PokiName.color(" &7- " + d.chat() + (on ? " &a[장착 중]" : " &7[장착]"))));
-            if (!on) {
-                line.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + label + " 장착 " + d.id()));
-                line.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(PokiName.color("&a눌러서 장착"))));
+        p.sendMessage(PokiName.color("&e&l내 칭호 &7(" + o.owned.size() + "개) &8- 글씨를 누르면 장착 · 이미지·글씨 하나씩 같이 달 수 있어요"));
+        for (boolean textKind : new boolean[]{false, true}) {
+            List<Def> list = new ArrayList<>();
+            for (String tid : o.owned) {
+                Def d = defs.get(tid);
+                if (d != null && d.text() == textKind) list.add(d);
             }
-            p.spigot().sendMessage(line);
-        }
-        if (o.equipped != null) {
-            TextComponent off = new TextComponent(TextComponent.fromLegacyText(PokiName.color(" &c[칭호 빼기]")));
-            off.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + label + " 해제"));
-            p.spigot().sendMessage(new BaseComponent[]{off});
+            if (list.isEmpty()) continue;
+            String slot = textKind ? o.equippedText : o.equipped;
+            p.sendMessage(PokiName.color(textKind ? "&b글씨 칭호" : "&d이미지 칭호"));
+            for (Def d : list) {
+                boolean on = d.id().equals(slot);
+                TextComponent line = new TextComponent(TextComponent.fromLegacyText(PokiName.color(" &7- " + d.chat() + (on ? " &a[장착 중]" : " &7[장착]"))));
+                if (!on) {
+                    line.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + label + " 장착 " + d.id()));
+                    line.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(PokiName.color("&a눌러서 장착"))));
+                }
+                p.spigot().sendMessage(line);
+            }
+            if (slot != null) {
+                TextComponent off = new TextComponent(TextComponent.fromLegacyText(PokiName.color(" &c[" + (textKind ? "글씨" : "이미지") + " 칭호 빼기]")));
+                off.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/" + label + " 해제 " + (textKind ? "글씨" : "이미지")));
+                p.spigot().sendMessage(new BaseComponent[]{off});
+            }
         }
     }
 
     private void usage(CommandSender s, String label) {
         s.sendMessage(PokiName.color("&e/" + label + " &7- 내 칭호 목록 (눌러서 장착)"));
-        s.sendMessage(PokiName.color("&e/" + label + " 장착 <칭호> &7/ &e/" + label + " 해제"));
+        s.sendMessage(PokiName.color("&e/" + label + " 장착 <칭호> &7/ &e/" + label + " 해제 [이미지|글씨|전체]"));
         if (s.hasPermission(ADMIN)) {
+            s.sendMessage(PokiName.color("&6/" + label + " 만들기 <이름> <색> &7- 글씨 칭호 바로 만들기 (#FF7F7F, 그라데이션 #FF7F7F-#FFD36B)"));
+            s.sendMessage(PokiName.color("&6/" + label + " 수정 <글씨 칭호> <색> &7/ &6/" + label + " 삭제 <글씨 칭호> &7- 삭제하면 가진 사람들한테서도 회수"));
             s.sendMessage(PokiName.color("&6/" + label + " 지급 <마크닉> <칭호|전체> &7- 칭호 주기"));
             s.sendMessage(PokiName.color("&6/" + label + " 회수 <마크닉> <칭호|전체> &7- 칭호 뺏기"));
             s.sendMessage(PokiName.color("&6/" + label + " 보기 <마크닉> &7- 가진 칭호 보기"));
@@ -410,12 +525,18 @@ final class Titles implements CommandExecutor, TabCompleter {
         boolean admin = s.hasPermission(ADMIN);
         if (a.length == 1) {
             List<String> subs = new ArrayList<>(List.of("장착", "해제"));
-            if (admin) subs.addAll(List.of("지급", "회수", "보기", "전체", "최초", "최초초기화", "리로드"));
+            if (admin) subs.addAll(List.of("지급", "회수", "보기", "전체", "만들기", "수정", "삭제", "최초", "최초초기화", "리로드"));
             for (String o : subs) if (o.startsWith(a[0])) out.add(o);
             return out;
         }
         String sub = a[0].toLowerCase(Locale.ROOT);
-        if (a.length == 2 && (sub.equals("장착") || sub.equals("equip")) && s instanceof Player p) {
+        if (a.length == 2 && (sub.equals("해제") || sub.equals("unequip"))) {
+            for (String o : List.of("이미지", "글씨", "전체")) if (o.startsWith(a[1])) out.add(o);
+        } else if (a.length == 2 && admin && List.of("수정", "edit", "삭제", "delete").contains(sub)) {
+            for (Def d : defs.values()) if (d.text() && d.id().startsWith(a[1])) out.add(d.id());
+        } else if (a.length == 3 && admin && List.of("만들기", "create", "수정", "edit").contains(sub)) {
+            if (a[2].isEmpty()) { out.add("#FF7F7F"); out.add("#8FD3FF-#C9A7FF"); }
+        } else if (a.length == 2 && (sub.equals("장착") || sub.equals("equip")) && s instanceof Player p) {
             Owned o = players.get(p.getUniqueId());
             if (o != null) for (String id : o.owned) if (id.startsWith(a[1])) out.add(id);
         } else if (a.length == 2 && admin && List.of("지급", "give", "회수", "take", "보기", "check").contains(sub)) {
@@ -500,6 +621,17 @@ final class Titles implements CommandExecutor, TabCompleter {
             ConfigurationSection t = sec.getConfigurationSection(id);
             if (t == null) continue;
             String name = t.getString("name", id);
+            String type = t.getString("type", t.isString("glyph") ? "image" : "text");
+            if (type.equalsIgnoreCase("text")) {
+                String col = normColor(t.getString("color", "&f"));
+                if (col == null) { plugin.getLogger().warning("titles.yml: " + id + " 의 color 값이 잘못됨 (" + t.getString("color") + ")"); col = "&f"; }
+                String k = id.toLowerCase(Locale.ROOT);
+                Def d = textDef(k, name, col, t.getString("tier", "글씨"), t.getBoolean("announce-first", true));
+                // chat 을 직접 적어 뒀으면 그걸 씀
+                if (t.isString("chat")) d = new Def(k, name, "", PokiName.color(t.getString("chat")), d.tier(), d.announceFirst(), true, col);
+                defs.put(k, d);
+                continue;
+            }
             String code = t.getString("glyph", "");
             String glyph;
             try {
@@ -510,8 +642,98 @@ final class Titles implements CommandExecutor, TabCompleter {
             }
             String chat = PokiName.color(t.getString("chat", "&f[" + name + "]"));
             defs.put(id.toLowerCase(Locale.ROOT), new Def(id.toLowerCase(Locale.ROOT), name, glyph, chat, t.getString("tier", ""),
-                    t.getBoolean("announce-first", true)));
+                    t.getBoolean("announce-first", true), false, ""));
         }
+    }
+
+    // ---------- 글씨 칭호 ----------
+
+    private static final java.util.regex.Pattern ONE_HEX = java.util.regex.Pattern.compile("#?([0-9a-fA-F]{6})");
+
+    /** "#FF7F7F" · "FF7F7F" · "#FF7F7F-#FFD36B" · "&e" → 저장 형식 ("#FF7F7F", "#FF7F7F-#FFD36B", "&e"). 틀리면 null */
+    static String normColor(String in) {
+        if (in == null) return null;
+        String s = in.trim();
+        if (s.matches("(&[0-9a-fA-Fk-oK-OrR])+")) return s.toLowerCase(Locale.ROOT);
+        String[] parts = s.split("-");
+        if (parts.length < 1 || parts.length > 2) return null;
+        StringBuilder out = new StringBuilder();
+        for (String part : parts) {
+            java.util.regex.Matcher m = ONE_HEX.matcher(part.trim());
+            if (!m.matches()) return null;
+            if (out.length() > 0) out.append('-');
+            out.append('#').append(m.group(1).toUpperCase(Locale.ROOT));
+        }
+        return out.toString();
+    }
+
+    /** 글씨 칭호 정의 — chat = "[이름]" 에 색(그라데이션)을 입힌 것 */
+    static Def textDef(String id, String name, String col, String tier, boolean announce) {
+        String fmt = "[" + name + "]";
+        return new Def(id, name, "", PokiName.color(paint(fmt, col)), tier == null ? "" : tier, announce, true, col);
+    }
+
+    /** 글자마다 색 칠하기 (그라데이션이면 글자마다 색이 조금씩 바뀜). 결과는 &#RRGGBB 형식 */
+    static String paint(String text, String col) {
+        if (col.startsWith("&")) return col + text;
+        String[] parts = col.split("-");
+        int a = Integer.parseInt(parts[0].substring(1), 16);
+        if (parts.length == 1) return "&#" + parts[0].substring(1) + text;
+        int b = Integer.parseInt(parts[1].substring(1), 16);
+        int[] cps = text.codePoints().toArray();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < cps.length; i++) {
+            double t = cps.length == 1 ? 0 : (double) i / (cps.length - 1);
+            int r = (int) Math.round(((a >> 16) & 255) + (((b >> 16) & 255) - ((a >> 16) & 255)) * t);
+            int g = (int) Math.round(((a >> 8) & 255) + (((b >> 8) & 255) - ((a >> 8) & 255)) * t);
+            int bl = (int) Math.round((a & 255) + ((b & 255) - (a & 255)) * t);
+            sb.append(String.format("&#%02X%02X%02X", r, g, bl)).appendCodePoint(cps[i]);
+        }
+        return sb.toString();
+    }
+
+    /** 글씨 칭호만 titles.yml 에 반영 (이미지 칭호 칸은 손대지 않음) */
+    private void saveDefs() {
+        YamlConfiguration y = YamlConfiguration.loadConfiguration(defsFile);
+        ConfigurationSection sec = y.getConfigurationSection("titles");
+        if (sec == null) sec = y.createSection("titles");
+        for (String id : new ArrayList<>(sec.getKeys(false))) {
+            String type = sec.getString(id + ".type", sec.isString(id + ".glyph") ? "image" : "text");
+            if (type.equalsIgnoreCase("text") && !defs.containsKey(id.toLowerCase(Locale.ROOT))) sec.set(id, null);
+        }
+        for (Def d : defs.values()) {
+            if (!d.text()) continue;
+            String base = d.id();
+            sec.set(base + ".name", d.name());
+            sec.set(base + ".type", "text");
+            sec.set(base + ".color", d.color());
+            sec.set(base + ".chat", null);
+            sec.set(base + ".tier", d.tier());
+            if (!d.announceFirst()) sec.set(base + ".announce-first", false);
+        }
+        write(defsFile, y.saveToString());
+    }
+
+    /** 파일 쓰기는 작업자 스레드에서 (임시 파일에 쓰고 바꿔치기) */
+    private void write(File f, String text) {
+        Runnable job = () -> {
+            try {
+                File dir = f.getParentFile();
+                dir.mkdirs();
+                File tmp = new File(dir, f.getName() + ".tmp");
+                java.nio.file.Files.writeString(tmp.toPath(), text, java.nio.charset.StandardCharsets.UTF_8);
+                java.nio.file.Files.move(tmp.toPath(), f.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException ex) {
+                plugin.getLogger().warning(f.getName() + " 저장 실패: " + ex.getMessage());
+            }
+        };
+        if (io.isShutdown()) job.run(); else io.execute(job);
+    }
+
+    /** 플러그인 끌 때: 남은 저장 다 끝내기 */
+    void close() {
+        io.shutdown();
+        try { io.awaitTermination(5, java.util.concurrent.TimeUnit.SECONDS); } catch (InterruptedException ignored) { Thread.currentThread().interrupt(); }
     }
 
     /** 예전(1.5.0) 영어 id → 지금 한글 id. 저장 파일에 남은 옛 id 를 불러올 때 바꿔줌 */
@@ -537,9 +759,12 @@ final class Titles implements CommandExecutor, TabCompleter {
         return OLD_IDS.getOrDefault(k, k);
     }
 
+    private boolean legacyFound;
+
     private void loadPlayers() {
         players.clear();
         if (!dataFile.exists()) return;
+        legacyFound = false;
         YamlConfiguration y = YamlConfiguration.loadConfiguration(dataFile);
         ConfigurationSection sec = y.getConfigurationSection("players");
         if (sec == null) return;
@@ -550,11 +775,28 @@ final class Titles implements CommandExecutor, TabCompleter {
                 Owned o = new Owned();
                 o.name = ps.getString("name");
                 for (String t : ps.getStringList("owned")) o.owned.add(migrate(t));
-                String eq = ps.getString("equipped");
-                o.equipped = eq == null || eq.isEmpty() ? null : migrate(eq);
+                String img = ps.getString("equipped-image");
+                String txt = ps.getString("equipped-text");
+                String legacy = ps.getString("equipped");
+                if (img == null && txt == null && legacy != null && !legacy.isEmpty()) {
+                    // 2.0 전: 장착 칸이 하나 → 그 칭호 종류의 칸으로 옮김
+                    legacyFound = true;
+                    Def d = defs.get(migrate(legacy));
+                    if (d != null && d.text()) txt = legacy; else img = legacy;
+                }
+                o.equipped = img == null || img.isEmpty() ? null : migrate(img);
+                o.equippedText = txt == null || txt.isEmpty() ? null : migrate(txt);
                 players.put(UUID.fromString(key), o);
             } catch (IllegalArgumentException ignored) {
             }
+        }
+        if (legacyFound) {
+            // 처음 한 번: 옛 파일 백업하고 칸별 형식으로 저장
+            File old = new File(plugin.getDataFolder(), "player-titles.yml.old");
+            try { if (!old.exists()) java.nio.file.Files.copy(dataFile.toPath(), old.toPath()); }
+            catch (IOException ex) { plugin.getLogger().warning("player-titles.yml 백업 실패: " + ex.getMessage()); }
+            save();
+            plugin.getLogger().info("장착 칭호를 이미지·글씨 칸으로 옮김 (옛 파일: player-titles.yml.old)");
         }
     }
 
@@ -615,29 +857,20 @@ final class Titles implements CommandExecutor, TabCompleter {
             y.set(base + ".name", e.getValue().name());
             y.set(base + ".at", e.getValue().at());
         }
-        try {
-            plugin.getDataFolder().mkdirs();
-            y.save(firstFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("first-titles.yml 저장 실패: " + ex.getMessage());
-        }
+        write(firstFile, y.saveToString());
     }
 
     private void save() {
         YamlConfiguration y = new YamlConfiguration();
         for (Map.Entry<UUID, Owned> e : players.entrySet()) {
             Owned o = e.getValue();
-            if (o.owned.isEmpty() && o.equipped == null) continue;
+            if (o.owned.isEmpty() && o.equipped == null && o.equippedText == null) continue;
             String base = "players." + e.getKey();
             y.set(base + ".name", o.name);
             y.set(base + ".owned", new ArrayList<>(o.owned));
-            y.set(base + ".equipped", o.equipped);
+            y.set(base + ".equipped-image", o.equipped);
+            y.set(base + ".equipped-text", o.equippedText);
         }
-        try {
-            plugin.getDataFolder().mkdirs();
-            y.save(dataFile);
-        } catch (IOException ex) {
-            plugin.getLogger().warning("player-titles.yml 저장 실패: " + ex.getMessage());
-        }
+        write(dataFile, y.saveToString());
     }
 }

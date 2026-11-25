@@ -25,7 +25,7 @@ import java.util.regex.Pattern;
  * 다른 플러그인·포키폰 서버가 부르는 API. 리플렉션으로 부르기 쉽게 JDK 타입(UUID·String·List·Map)만 씀.
  * 메인 스레드에서 부르기. 줄 목록은 탭(\t)으로 나눈 칸.
  *
- *  townOf(플레이어)            → {uuid, name, display, color} (마을 없으면 null) — 알바는 마을 없음 취급
+ *  townOf(플레이어)            → {uuid, name, display, color, role, custom(운영진이 정한 이름이면 1)} (마을 없으면 null) — 알바는 마을 없음 취급
  *  me(나)                      → "ME 마을UUID 역할 권한들 목록공개 OP" + 받은 초대 "INV 마을UUID 이름 표시 보낸사람 이장 주민수"
  *  towns(나)                   → "T ..." 마을 목록 (유저는 목록공개가 꺼져 있으면 빈 목록)
  *  town(나, 마을UUID)          → "T ..." + 주민 "R ..." + 알바 "A ..."
@@ -64,6 +64,7 @@ public final class PokiTownApi {
         m.put("display", p().display(t));
         m.put("color", p().color(t));
         m.put("role", PokiTown.role(t, r));
+        m.put("custom", p().customDisplay(t) ? "1" : "0");
         return m;
     }
 

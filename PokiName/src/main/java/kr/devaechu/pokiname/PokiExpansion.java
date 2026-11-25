@@ -16,8 +16,11 @@ import org.bukkit.OfflinePlayer;
  * %pokiname_cobble_<n>% ...        코블달러 순위 (money 와 같은 형식)
  * %pokiname_biome%                지금 있는 바이옴 이름 (한글, 없으면 "Orchid Swamp" 식)
  * %pokiname_biome_1% / _2%        긴 바이옴 이름을 두 줄로 나눈 것 (biome.max-length 글자 기준)
- * %pokiname_title%               장착한 칭호 색 글씨 (없으면 빈칸)
- * %pokiname_title_name%          장착한 칭호 이름만 (색 없음)
+ * %pokiname_title%               장착한 이미지 칭호 색 글씨 (없으면 빈칸)
+ * %pokiname_title_name%          장착한 이미지 칭호 이름만 (색 없음)
+ * %pokiname_text_title%          장착한 글씨 칭호 색 글씨 (없으면 빈칸)
+ * %pokiname_list_title%          Tab 규칙 결과: 이미지 칭호 > 글씨 칭호 (없으면 빈칸)
+ * %pokiname_town%                마을 이름 (PokiTown 표시 이름·색 그대로, 없으면 빈칸)
  * %pokiname_boost%              경험치 부스트 중이면 "&6⚡ 경험치 2배 &f9:59", 아니면 빈칸 (스코어보드용)
  * %pokiname_boost_time%         남은 시간만 (9:59), 아니면 빈칸
  */
@@ -66,6 +69,15 @@ final class PokiExpansion extends PlaceholderExpansion {
             if (p.equals("title_name")) return plugin.titles().nameOf(player.getUniqueId());
             Titles.Def d = plugin.titles().equipped(player.getUniqueId());
             return d == null ? "" : d.chat();
+        }
+        if (p.equals("text_title") || p.equals("list_title")) {
+            if (player == null || plugin.titles() == null) return "";
+            Titles.Def d = p.equals("text_title") ? plugin.titles().equippedText(player.getUniqueId()) : plugin.titles().listTitle(player.getUniqueId());
+            return d == null ? "" : d.chat();
+        }
+        if (p.equals("town")) {
+            if (player == null) return "";
+            return PokiName.color(plugin.townPlain(player.getUniqueId()));
         }
         if (p.equals("boost") || p.equals("boost_time")) {
             String t = Boost.left();

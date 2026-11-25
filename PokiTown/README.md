@@ -30,7 +30,7 @@ Towny **0.101.2.0** 으로 빌드. 서버 Towny 를 올리면 `pom.xml` 의 Town
 
 | 메서드 | 설명 |
 | --- | --- |
-| `townOf(UUID)` | `{uuid, name, display, color, role}` · 마을 없으면 null (알바는 마을 없음) |
+| `townOf(UUID)` | `{uuid, name, display, color, role, custom}` · 마을 없으면 null (알바는 마을 없음) |
 | `onChange(Consumer<UUID>)` | 접속 중인 사람의 마을 소속·직책·알바·표시가 바뀌면 (Bukkit 이벤트 `PokiTownChangeEvent` 도 같이 발생) |
 | `onNotify(BiConsumer<UUID,String>)` | 포키폰 알림 문구 (초대 받음, 주민 들어옴·나감, 부이장·알바 지정) |
 | `me` · `towns` · `town` · `act` | 포키폰 마을 앱용. `act` 는 그 사람이 Towny 명령어를 친 것처럼 **본인 권한**으로 실행, `/confirm` 자동 |
