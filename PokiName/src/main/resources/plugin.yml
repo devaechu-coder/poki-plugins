@@ -11,6 +11,11 @@ commands:
     usage: /pnick <설정|해제|목록|리로드>
     aliases: [한글닉]
     permission: pokiname.admin
+  pnickcompat:
+    description: 예전 NickName 플러그인 명령어 (= /한글닉 설정·해제)
+    usage: /닉네임설정 <플레이어> <닉네임|삭제>
+    aliases: [닉네임설정]
+    permission: pokiname.admin
   ptitle:
     description: 칭호 보기·장착 (관리자는 지급·회수)
     usage: /ptitle [장착|해제|지급|회수|보기|전체|리로드]
