@@ -27,8 +27,8 @@ import java.util.regex.Pattern;
  *
  *  townOf(플레이어)            → {uuid, name, display, color, role, custom(운영진이 정한 이름이면 1)} (마을 없으면 null) — 알바는 마을 없음 취급
  *  me(나)                      → "ME 마을UUID 역할 권한들 목록공개 OP" + 받은 초대 "INV 마을UUID 이름 표시 보낸사람 이장 주민수"
- *  towns(나)                   → "T ..." 마을 목록 (유저는 목록공개가 꺼져 있으면 빈 목록)
- *  town(나, 마을UUID)          → "T ..." + 주민 "R ..." + 알바 "A ..."
+ *  towns(나)                   → "T ... 주민이름들(OP만)" 마을 목록 (유저는 목록공개가 꺼져 있으면 빈 목록)
+ *  town(나, 마을UUID)          → "T ... 스폰있음" + 주민 "R ..." + 알바 "A ..."
  *  act(나, 행동, 대상)         → "OK" / "ERR:이유" — 그 사람이 Towny 명령어를 친 것처럼 (본인 권한, /confirm 자동)
  *  onChange(리스너)            → 접속 중인 사람의 마을 상태가 바뀌면 그 사람 UUID
  *  onNotify(리스너)            → 포키폰 알림 (받을 사람 UUID, 문구)
@@ -119,7 +119,15 @@ public final class PokiTownApi {
         List<Town> all = new ArrayList<>(TownyAPI.getInstance().getTowns());
         all.sort(Comparator.comparingInt(Town::getNumResidents).reversed().thenComparing(Town::getName));
         for (Town t : all) {
-            out.add(townRow(t, op || t == mine));
+            // 운영진은 주민 이름으로도 찾을 수 있게 맨 끝 칸에 주민·알바 마크닉
+            String names = "";
+            if (op) {
+                List<String> ns = new ArrayList<>();
+                for (Resident r : t.getResidents()) ns.add(r.getName());
+                for (Resident r : t.getTrustedResidents()) ns.add(r.getName());
+                names = String.join(",", ns);
+            }
+            out.add(townRow(t, op || t == mine) + "\t" + names.replace('\t', ' '));
             if (out.size() >= 400) break;
         }
         return out;
