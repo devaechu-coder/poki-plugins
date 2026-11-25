@@ -410,6 +410,21 @@ public final class PokiMail extends JavaPlugin implements Listener, TabCompleter
                 }
                 sendItems(s, a[1], specOf(hand), hand, count, memo, from, false);
             }
+            case "복사" -> {
+                // 손에 든 아이템 → 다른 플러그인 보상 설정에 붙여넣을 지급 명령어 (ChzzkLink 등)
+                if (!(s instanceof Player p)) { msg(s, "&c플레이어만 쓸 수 있어요"); return true; }
+                ItemStack hand = p.getInventory().getItemInMainHand();
+                if (hand.getType().isAir()) { msg(s, "&c손에 아이템을 들어 주세요"); return true; }
+                String who = a.length > 1 ? a[1] : "{player}";
+                String line = "우편 지급 " + who + " " + specOf(hand) + " " + hand.getAmount();
+                TextComponent t = new TextComponent(TextComponent.fromLegacyText(color("&6[우편] &f" + line + " ")));
+                TextComponent cp = new TextComponent(TextComponent.fromLegacyText(color("&e[복사]")));
+                cp.setClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, line));
+                cp.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(color("&a눌러서 복사 → 보상 설정 명령어 칸에 붙여넣기"))));
+                t.addExtra(cp);
+                p.spigot().sendMessage(t);
+                getLogger().info("[우편 복사] " + line);
+            }
             case "명령" -> {
                 if (a.length < 4) { msg(s, "&c/우편 명령 <마크닉|@a|전체> <보일이름(띄어쓰기 _)> <명령어...>  &7예) /우편 명령 전체 코인_1000개 eco give %player% 1000"); return true; }
                 String name = a[2];
@@ -530,6 +545,7 @@ public final class PokiMail extends JavaPlugin implements Listener, TabCompleter
         msg(s, "&f/우편 보내기 <마크닉|@a|전체> <아이템> [개수] [메모] &7- 바로 우편함으로 (전체 = 접속 안 한 사람 포함)");
         msg(s, "&f/우편 손 <마크닉|@a|전체> [개수] [메모] &7- 손에 든 아이템과 같은 걸 우편으로 (내 손은 그대로)");
         msg(s, "&f/우편 명령 <대상> <보일이름> <명령어> &7- 받을 때 콘솔 실행 (%player%) · 돈·칭호 등");
+        msg(s, "&f/우편 복사 [대상] &7- 손에 든 아이템을 '우편 지급' 명령어 한 줄로 (ChzzkLink 보상 설정에 붙여넣기, 대상 기본 {player})");
         msg(s, "&f/우편 보기 <마크닉> &7/ &f/우편 회수 <마크닉> <번호|전부> &7/ &f/우편 리로드");
     }
 
@@ -554,7 +570,7 @@ public final class PokiMail extends JavaPlugin implements Listener, TabCompleter
     public List<String> onTabComplete(CommandSender s, Command c, String alias, String[] a) {
         List<String> out = new ArrayList<>();
         if (c.getName().equals("pokimailbox")) { if (a.length == 1 && "모두받기".startsWith(a[0])) out.add("모두받기"); return out; }
-        if (a.length == 1) { for (String o : List.of("지급", "보내기", "손", "명령", "보기", "회수", "리로드")) if (o.startsWith(a[0])) out.add(o); return out; }
+        if (a.length == 1) { for (String o : List.of("지급", "보내기", "손", "복사", "명령", "보기", "회수", "리로드")) if (o.startsWith(a[0])) out.add(o); return out; }
         if (a.length == 2) {
             if (!List.of("보기", "회수").contains(a[0])) { out.add("@a"); if (!a[0].equals("지급")) out.add("전체"); }
             String pre = a[1].toLowerCase(Locale.ROOT);
